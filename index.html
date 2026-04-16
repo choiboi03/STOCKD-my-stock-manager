@@ -1,0 +1,2608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════
+   CSS VARIABLES — DESIGN TOKENS
+═══════════════════════════════════════════ */
+:root {
+  --bg: #F4F6F9;
+  --surface: #FFFFFF;
+  --surface2: #F0F2F5;
+  --border: #E2E8F0;
+  --border2: #CBD5E1;
+  --text: #0F172A;
+  --text2: #334155;
+  --muted: #64748B;
+  --accent: #2563EB;
+  --accent-dim: rgba(37,99,235,0.1);
+  --profit: #059669;
+  --profit-dim: rgba(5,150,105,0.1);
+  --loss: #DC2626;
+  --loss-dim: rgba(220,38,38,0.1);
+  --alert: #D97706;
+  --alert-dim: rgba(217,119,6,0.12);
+  --nav-h: 52px;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+}
+[data-theme="dark"] {
+  --bg: #0A0F1A;
+  --surface: #111827;
+  --surface2: #1A2235;
+  --border: #1E293B;
+  --border2: #2D3F55;
+  --text: #F1F5F9;
+  --text2: #CBD5E1;
+  --muted: #64748B;
+  --accent: #3B82F6;
+  --accent-dim: rgba(59,130,246,0.12);
+  --profit: #22C55E;
+  --profit-dim: rgba(34,197,94,0.1);
+  --loss: #EF4444;
+  --loss-dim: rgba(239,68,68,0.1);
+  --alert: #F59E0B;
+  --alert-dim: rgba(245,158,11,0.12);
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+/* ═══════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background 0.2s, color 0.2s;
+}
+button { cursor: pointer; font-family: inherit; border: none; background: none; }
+input, select, textarea { font-family: inherit; font-size: inherit; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ═══════════════════════════════════════════
+   TYPOGRAPHY UTILITIES
+═══════════════════════════════════════════ */
+.mono { font-family: 'Space Mono', monospace; }
+.text-muted { color: var(--muted); }
+.text-sm { font-size: 12px; }
+.text-xs { font-size: 11px; }
+.profit-text { color: var(--profit); font-family: 'Space Mono', monospace; }
+.loss-text   { color: var(--loss);   font-family: 'Space Mono', monospace; }
+.neutral-text { color: var(--muted); font-family: 'Space Mono', monospace; }
+.fw-600 { font-weight: 600; }
+
+/* ═══════════════════════════════════════════
+   HOME SCREEN LAUNCHER
+═══════════════════════════════════════════ */
+.home-screen {
+  min-height: 100vh;
+  padding: 24px 20px;
+  display: flex; flex-direction: column;
+}
+.home-brand {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 6px;
+}
+.home-brand-icon {
+  font-size: 22px; color: var(--accent);
+  font-family: 'Space Mono', monospace;
+}
+.home-brand-name {
+  font-family: 'Space Mono', monospace;
+  font-size: 16px; font-weight: 700;
+  color: var(--text); letter-spacing: -0.5px;
+}
+.home-subtitle {
+  font-size: 12px; color: var(--muted);
+  margin-bottom: 24px;
+  font-family: 'Space Mono', monospace;
+}
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  flex: 1;
+}
+.home-tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 16px;
+  cursor: pointer;
+  transition: all 0.18s;
+  display: flex; flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--shadow);
+  position: relative; overflow: hidden;
+}
+.home-tile::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--tile-color, var(--accent));
+  opacity: 0.7;
+}
+.home-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--tile-color, var(--accent));
+}
+.home-tile:active { transform: translateY(0); }
+.home-tile-icon { font-size: 24px; line-height: 1; }
+.home-tile-label {
+  font-size: 13px; font-weight: 700;
+  color: var(--text);
+}
+.home-tile-desc {
+  font-size: 11px; color: var(--muted);
+  line-height: 1.4;
+}
+.home-tile-badge {
+  position: absolute; top: 10px; right: 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px; font-weight: 700;
+  color: var(--tile-color, var(--accent));
+  opacity: 0.8;
+}
+
+/* ═══════════════════════════════════════════
+   VIEW TOP BAR (back button)
+═══════════════════════════════════════════ */
+.view-topbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 50;
+}
+.back-btn {
+  display: flex; align-items: center; gap: 6px;
+  height: 32px; padding: 0 10px;
+  border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-dim);
+  transition: all 0.15s;
+}
+.back-btn:hover { background: var(--accent); color: #fff; }
+.topbar-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 14px; font-weight: 700;
+  color: var(--text);
+}
+.topbar-spacer { flex: 1; }
+
+/* ═══════════════════════════════════════════
+   MAIN CONTENT AREA
+═══════════════════════════════════════════ */
+#app {
+  min-height: 100vh;
+}
+.view {
+  padding: 20px 20px 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.view-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+}
+.view-title {
+  font-size: 20px; font-weight: 700;
+  font-family: 'Space Mono', monospace;
+  color: var(--text);
+}
+
+/* ═══════════════════════════════════════════
+   CARDS
+═══════════════════════════════════════════ */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+.card-title {
+  font-size: 12px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--muted); margin-bottom: 8px;
+}
+
+/* STAT CARDS */
+.stat-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px; margin-bottom: 16px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+.stat-label {
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--muted); margin-bottom: 6px;
+}
+.stat-value {
+  font-family: 'Space Mono', monospace;
+  font-size: 20px; font-weight: 700;
+  color: var(--text); line-height: 1;
+}
+.stat-sub {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px; color: var(--muted);
+  margin-top: 4px;
+}
+
+/* ═══════════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════════ */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 34px; padding: 0 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 500;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--accent); color: #fff;
+}
+.btn-primary:hover { filter: brightness(1.1); }
+.btn-secondary {
+  background: var(--surface2);
+  color: var(--text2);
+  border: 1px solid var(--border2);
+}
+.btn-secondary:hover { background: var(--border); }
+.btn-danger {
+  background: var(--loss-dim);
+  color: var(--loss);
+  border: 1px solid var(--loss);
+}
+.btn-danger:hover { background: var(--loss); color: #fff; }
+.btn-ghost { color: var(--muted); }
+.btn-ghost:hover { color: var(--text); background: var(--surface2); }
+.btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
+.btn-icon { padding: 0 8px; }
+
+/* ═══════════════════════════════════════════
+   FORMS
+═══════════════════════════════════════════ */
+.form-group { margin-bottom: 14px; }
+.form-label {
+  display: block; font-size: 12px; font-weight: 600;
+  color: var(--muted); margin-bottom: 5px;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.form-input, .form-select, .form-textarea {
+  width: 100%; padding: 8px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+.form-input.mono, .mono-input {
+  font-family: 'Space Mono', monospace;
+}
+.form-textarea { resize: vertical; min-height: 72px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-hint { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.toggle-group { display: flex; gap: 6px; }
+.toggle-btn {
+  flex: 1; height: 34px; padding: 0 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 500;
+  border: 1px solid var(--border2);
+  background: var(--surface2); color: var(--muted);
+  transition: all 0.15s;
+}
+.toggle-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent); font-weight: 600;
+}
+.toggle-btn.active.buy { border-color: var(--profit); background: var(--profit-dim); color: var(--profit); }
+.toggle-btn.active.sell { border-color: var(--loss); background: var(--loss-dim); color: var(--loss); }
+
+/* ═══════════════════════════════════════════
+   TABLES
+═══════════════════════════════════════════ */
+.table-toolbar {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px; flex-wrap: wrap;
+}
+.filter-select {
+  height: 32px; padding: 0 8px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--text); font-size: 12px;
+  cursor: pointer;
+}
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+thead { background: var(--surface2); }
+th {
+  padding: 10px 12px;
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--muted);
+  text-align: left; white-space: nowrap;
+  cursor: pointer; user-select: none;
+  border-bottom: 1px solid var(--border);
+  transition: color 0.15s;
+}
+th:hover { color: var(--text); }
+th.sorted { color: var(--accent); }
+th .sort-arrow { margin-left: 4px; opacity: 0.5; }
+th.sorted .sort-arrow { opacity: 1; }
+td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px; white-space: nowrap;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface2); }
+tr.row-zero td { opacity: 0.45; }
+.td-num { font-family: 'Space Mono', monospace; text-align: right; }
+
+/* ═══════════════════════════════════════════
+   BADGES & PILLS
+═══════════════════════════════════════════ */
+.badge {
+  display: inline-flex; align-items: center;
+  height: 20px; padding: 0 7px;
+  border-radius: 10px;
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.badge-buy  { background: var(--profit-dim); color: var(--profit); }
+.badge-sell { background: var(--loss-dim);   color: var(--loss); }
+.badge-us   { background: var(--accent-dim); color: var(--accent); }
+.badge-kr   { background: rgba(168,85,247,0.1); color: #a855f7; }
+.tag-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 22px; padding: 0 8px;
+  border-radius: 11px;
+  font-size: 11px; font-weight: 500;
+  background: var(--accent-dim); color: var(--accent);
+  cursor: pointer; transition: all 0.15s;
+  border: 1px solid transparent;
+}
+.tag-pill:hover { border-color: var(--accent); }
+.tag-pill.selected { background: var(--accent); color: #fff; }
+
+/* ═══════════════════════════════════════════
+   MODALS
+═══════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.15s ease;
+}
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: 100%; max-width: 480px;
+  max-height: 90vh; overflow-y: auto;
+  padding: 24px;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.2s ease;
+}
+.modal-lg { max-width: 720px; }
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.modal-title { font-size: 16px; font-weight: 700; }
+.modal-close {
+  width: 28px; height: 28px;
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); font-size: 18px;
+  transition: all 0.15s;
+}
+.modal-close:hover { background: var(--surface2); color: var(--text); }
+.modal-footer {
+  display: flex; gap: 8px; justify-content: flex-end;
+  margin-top: 20px; padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* Modal tabs */
+.modal-tabs {
+  display: flex; gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.modal-tab {
+  padding: 8px 14px; font-size: 13px; font-weight: 500;
+  color: var(--muted); border-bottom: 2px solid transparent;
+  margin-bottom: -1px; transition: all 0.15s;
+}
+.modal-tab:hover { color: var(--text); }
+.modal-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ═══════════════════════════════════════════
+   SEARCH RESULTS
+═══════════════════════════════════════════ */
+.search-results {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+  max-height: 200px; overflow-y: auto;
+  margin-top: 4px;
+}
+.search-result-item {
+  padding: 10px 12px; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.search-result-item:last-child { border-bottom: none; }
+.search-result-item:hover { background: var(--surface2); }
+.search-result-name { font-weight: 500; font-size: 13px; }
+.search-result-ticker {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px; color: var(--accent);
+}
+.search-result-exchange { font-size: 11px; color: var(--muted); }
+
+/* ═══════════════════════════════════════════
+   ALERT CARDS
+═══════════════════════════════════════════ */
+.alert-card {
+  background: var(--alert-dim);
+  border: 1px solid var(--alert);
+  border-left: 4px solid var(--alert);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+.alert-card-title {
+  font-weight: 600; font-size: 13px;
+  color: var(--alert); margin-bottom: 4px;
+}
+.alert-card-body { font-size: 12px; color: var(--text2); }
+
+/* ═══════════════════════════════════════════
+   SHIMMER LOADING
+═══════════════════════════════════════════ */
+.shimmer {
+  background: linear-gradient(90deg,
+    var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 3px;
+  color: transparent !important;
+  pointer-events: none;
+  min-width: 60px;
+  display: inline-block;
+}
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ═══════════════════════════════════════════
+   TOAST NOTIFICATIONS
+═══════════════════════════════════════════ */
+#toast-container {
+  position: fixed; bottom: 20px; right: 20px;
+  z-index: 9999; display: flex; flex-direction: column; gap: 8px;
+}
+.toast {
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 500;
+  box-shadow: var(--shadow-md);
+  animation: slideLeft 0.2s ease;
+  max-width: 320px;
+}
+.toast-success { background: var(--profit); color: #fff; }
+.toast-error   { background: var(--loss);   color: #fff; }
+.toast-info    { background: var(--accent); color: #fff; }
+
+/* ═══════════════════════════════════════════
+   PROGRESS BAR
+═══════════════════════════════════════════ */
+.progress-bar {
+  height: 6px; background: var(--surface2);
+  border-radius: 3px; overflow: hidden;
+  margin: 6px 0;
+}
+.progress-fill {
+  height: 100%; border-radius: 3px;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+
+/* ═══════════════════════════════════════════
+   TABS (inline view tabs)
+═══════════════════════════════════════════ */
+.tabs {
+  display: flex; gap: 4px;
+  background: var(--surface2);
+  padding: 4px; border-radius: var(--radius-sm);
+  margin-bottom: 16px; width: fit-content;
+}
+.tab-btn {
+  padding: 6px 14px; font-size: 12px; font-weight: 600;
+  border-radius: 5px; color: var(--muted);
+  transition: all 0.15s;
+}
+.tab-btn.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+.tab-btn:hover:not(.active) { color: var(--text); }
+
+/* ═══════════════════════════════════════════
+   CHARTS GRID
+═══════════════════════════════════════════ */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+.chart-title {
+  font-size: 12px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--muted); margin-bottom: 12px;
+}
+.chart-canvas-wrap { position: relative; height: 220px; }
+
+/* ═══════════════════════════════════════════
+   RULE CARD
+═══════════════════════════════════════════ */
+.rule-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 8px;
+}
+.rule-card-body { flex: 1; }
+.rule-card-name { font-weight: 600; font-size: 13px; margin-bottom: 3px; }
+.rule-card-cond  { font-size: 12px; color: var(--muted); font-family: 'Space Mono', monospace; }
+
+/* ═══════════════════════════════════════════
+   TOGGLE SWITCH
+═══════════════════════════════════════════ */
+.switch {
+  position: relative; width: 36px; height: 20px;
+  cursor: pointer; flex-shrink: 0;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch-track {
+  position: absolute; inset: 0;
+  background: var(--border2); border-radius: 10px;
+  transition: background 0.2s;
+}
+.switch input:checked ~ .switch-track { background: var(--accent); }
+.switch-thumb {
+  position: absolute; top: 3px; left: 3px;
+  width: 14px; height: 14px;
+  background: #fff; border-radius: 50%;
+  transition: transform 0.2s;
+}
+.switch input:checked ~ .switch-thumb { transform: translateX(16px); }
+
+/* ═══════════════════════════════════════════
+   PLAYBOOK PRINCIPLE ITEMS
+═══════════════════════════════════════════ */
+.principle-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+}
+.principle-num {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px; color: var(--accent);
+  width: 20px; flex-shrink: 0;
+}
+.principle-text { flex: 1; font-size: 13px; }
+.principle-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+/* ═══════════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════════ */
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideLeft { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+/* ═══════════════════════════════════════════
+   MISC UTILITIES
+═══════════════════════════════════════════ */
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+.empty-state {
+  text-align: center; padding: 40px 20px;
+  color: var(--muted); font-size: 13px;
+}
+.empty-state-icon { font-size: 32px; margin-bottom: 8px; }
+.flex-row  { display: flex; align-items: center; gap: 8px; }
+.flex-wrap { flex-wrap: wrap; }
+.gap-4 { gap: 4px; }
+.gap-8 { gap: 8px; }
+.mt-8  { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.mt-16 { margin-top: 16px; }
+.mb-12 { margin-bottom: 12px; }
+.stale-icon { color: var(--alert); font-size: 11px; margin-left: 3px; }
+.pagination {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 16px; border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--muted);
+}
+.section-header {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--muted); margin-bottom: 10px;
+}
+
+/* Settings section card */
+.settings-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px; margin-bottom: 14px;
+  box-shadow: var(--shadow);
+}
+.settings-section-title {
+  font-size: 13px; font-weight: 700;
+  margin-bottom: 14px; color: var(--text);
+}
+.settings-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.settings-row:last-child { border-bottom: none; }
+.settings-row-label { font-size: 13px; font-weight: 500; }
+.settings-row-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* Pagination buttons */
+.page-btn {
+  height: 28px; padding: 0 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px; font-weight: 500;
+  background: var(--surface2); color: var(--text);
+  border: 1px solid var(--border);
+  transition: all 0.15s;
+}
+.page-btn:hover { background: var(--border); }
+.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — MOBILE
+═══════════════════════════════════════════ */
+@media (max-width: 500px) {
+  .view { padding: 12px 12px 32px; }
+  .stat-strip { grid-template-columns: 1fr 1fr; }
+  .charts-grid { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+  .modal { padding: 16px; }
+  .home-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+}
+@media (max-width: 768px) {
+  .stat-strip { grid-template-columns: repeat(2, 1fr); }
+  .charts-grid { grid-template-columns: 1fr; }
+  .stat-value { font-size: 16px; }
+}
+</style>
+</head>
+<body data-theme="light">
+
+<!-- no persistent nav — home screen launcher pattern -->
+
+<!-- APP ROOT -->
+<main id="app"></main>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   SECTION 1 — DB SCHEMA & PERSISTENCE
+═══════════════════════════════════════════════════════════ */
+const _sid = new URLSearchParams(window.location.search).get('stackd_id');
+const DATA_KEY     = 'stockmanager_data';
+const INSTANCE_KEY = _sid ? `stockmanager_instance_${_sid}` : null;
+
+const PRESET_ACCOUNTS    = ['ISA','연금(IRP)','일반','해외위탁','기타'];
+const PRESET_CATEGORIES  = ['AI·반도체','에너지·인프라','방산·우주','바이오·헬스','금융','소비재','ETF','현금성','기타'];
+
+const DEFAULT_DB = {
+  stocks: [], trades: [], news: [], rules: [],
+  playbook: { principles: [], goals: [], watchlist: [] },
+  exchangeRate: { USDKRW: 1380, updatedAt: null },
+  settings: { theme:'light', language:'en', currency:'USD', customAccounts:[], customCategories:[] }
+};
+
+let db = {};
+let saveTimer = null;
+
+function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
+function uid() { return crypto.randomUUID(); }
+
+function loadDB() {
+  try { db = JSON.parse(localStorage.getItem(DATA_KEY) || 'null') || deepClone(DEFAULT_DB); }
+  catch(e) { db = deepClone(DEFAULT_DB); }
+}
+function saveDB() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => localStorage.setItem(DATA_KEY, JSON.stringify(db)), 300);
+}
+function saveView(v) { if (INSTANCE_KEY) localStorage.setItem(INSTANCE_KEY, v); }
+function loadView()  { return (INSTANCE_KEY ? localStorage.getItem(INSTANCE_KEY) : null) || 'dashboard'; }
+
+function seedIfEmpty() {
+  if (db.stocks.length === 0) {
+    db.stocks = [
+      { id:uid(), ticker:'NVDA',   name:'NVIDIA',      exchange:'US', currency:'USD', holdings:10,  avgPrice:110,   category:'AI·반도체', account:'해외위탁', currentPrice:null, priceUpdatedAt:null, memo:'Core AI holding' },
+      { id:uid(), ticker:'005930', name:'삼성전자',    exchange:'KR', currency:'KRW', holdings:50,  avgPrice:71000, category:'AI·반도체', account:'ISA',     currentPrice:null, priceUpdatedAt:null, memo:'' },
+      { id:uid(), ticker:'RKLB',   name:'Rocket Lab',  exchange:'US', currency:'USD', holdings:100, avgPrice:8.5,   category:'방산·우주', account:'해외위탁', currentPrice:null, priceUpdatedAt:null, memo:'Space infra play' }
+    ];
+  }
+  if (db.rules.length === 0) {
+    db.rules = [
+      { id:uid(), name:'수익 실현 검토',  active:true, condition:{ metric:'profitRate', operator:'gte', value:20, stockId:null }, message:'Consider taking profits on this position' },
+      { id:uid(), name:'비중 과집중 경고',active:true, condition:{ metric:'allocation', operator:'gte', value:30, stockId:null }, message:'Single stock over 30% — rebalancing recommended' },
+      { id:uid(), name:'손절선 도달',     active:true, condition:{ metric:'lossRate',   operator:'gte', value:10, stockId:null }, message:'Stop-loss threshold reached' }
+    ];
+  }
+  if (db.playbook.principles.length === 0) {
+    db.playbook.principles = [
+      { id:uid(), text:'절대 레버리지 금지' },
+      { id:uid(), text:'AI 인프라 중심 포트폴리오 유지' },
+      { id:uid(), text:'손절 -10%, 익절 +20% 기준 리뷰' }
+    ];
+    db.playbook.goals = [
+      { id:uid(), label:'5년 2.5x 목표', targetMultiple:2.5, deadline:'2029-12-31', memo:'Primary growth target' }
+    ];
+  }
+  saveDB();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION 2 — i18n
+═══════════════════════════════════════════════════════════ */
+const i18n = {
+  en: {
+    nav: { dashboard:'Dashboard', graphs:'Graphs', tradelog:'Trade Log', news:'News', myrule:'My Rule', playbook:'Playbook', mydb:'My DB', settings:'Settings' },
+    dashboard: { title:'Dashboard', addStock:'+ Add Stock', refreshPrices:'↻ Refresh Prices', totalValue:'Total Value', totalPL:'Total P&L', numHoldings:'Holdings', usdkrw:'USD / KRW' },
+    cols: { name:'Name', ticker:'Ticker', account:'Account', category:'Category', shares:'Shares', avgPrice:'Avg Price', curPrice:'Cur Price', pl:'P&L', plPct:'P&L %', alloc:'Alloc %' },
+    trade: { title:'Trade Log', recordTrade:'+ Record Trade', date:'Date', stock:'Stock', type:'Type', qty:'Qty', price:'Price/Share', total:'Total', memo:'Memo', buy:'Buy', sell:'Sell', noTrades:'No trades recorded yet.' },
+    news: { title:'News', addNews:'+ Add News', source:'Source', url:'URL', summary:'Summary', relatedStocks:'Related Stocks', noNews:'No news scraps yet.' },
+    rule: { title:'My Rule', addRule:'+ Add Rule', alerts:'Active Alerts', noAlerts:'No rules triggered', ruleName:'Rule Name', target:'Target', allStocks:'All Stocks', specificStock:'Specific Stock', metric:'Metric', operator:'Operator', value:'Value', alertMsg:'Alert Message', active:'Active' },
+    playbook: { title:'Playbook', principles:'Principles', goals:'Goals', watchlist:'Watchlist', addPrinciple:'+ Add Principle', addGoal:'+ Add Goal', addWatch:'+ Add to Watchlist', moveToPortfolio:'Move to Portfolio', noWatchlist:'Watchlist is empty.' },
+    mydb: { title:'My DB', exportXlsx:'Export Excel', exportJson:'Export JSON', importJson:'Import JSON', stocks:'Stocks', trades:'Trades', news:'News' },
+    settings: { title:'Settings', display:'Display', theme:'Theme', light:'Light', dark:'Dark', language:'Language', currency:'Currency for USD stocks', accounts:'Accounts', categories:'Categories', data:'Data', exportJson:'Export JSON', importJson:'Import JSON', reset:'Reset All Data', resetConfirm:'Delete ALL data? This cannot be undone.', usd:'USD', krw:'KRW (₩)', addCustom:'+ Add', save:'Save', cancel:'Cancel', close:'Close' },
+    common: { edit:'Edit', delete:'Delete', confirm:'Confirm', close:'Close', buy:'Buy', sell:'Sell', memo:'Memo', date:'Date', add:'Add', save:'Save', cancel:'Cancel', name:'Name', search:'Search...', na:'--' }
+  },
+  ko: {
+    nav: { dashboard:'대시보드', graphs:'그래프', tradelog:'매매일지', news:'뉴스', myrule:'내규칙', playbook:'플레이북', mydb:'내DB', settings:'설정' },
+    dashboard: { title:'대시보드', addStock:'+ 종목추가', refreshPrices:'↻ 가격갱신', totalValue:'총 평가금액', totalPL:'총 손익', numHoldings:'보유종목', usdkrw:'달러환율' },
+    cols: { name:'종목명', ticker:'티커', account:'계좌', category:'카테고리', shares:'보유량', avgPrice:'평단가', curPrice:'현재가', pl:'수익금', plPct:'수익률%', alloc:'비중%' },
+    trade: { title:'매매일지', recordTrade:'+ 매매기록', date:'날짜', stock:'종목', type:'구분', qty:'수량', price:'주당가격', total:'합계', memo:'메모', buy:'매수', sell:'매도', noTrades:'매매 기록이 없습니다.' },
+    news: { title:'뉴스스크랩', addNews:'+ 뉴스추가', source:'출처', url:'링크', summary:'내용요약', relatedStocks:'연관종목', noNews:'스크랩된 뉴스가 없습니다.' },
+    rule: { title:'내 규칙', addRule:'+ 규칙추가', alerts:'활성 알림', noAlerts:'발동된 규칙 없음', ruleName:'규칙명', target:'적용대상', allStocks:'전체종목', specificStock:'특정종목', metric:'기준', operator:'조건', value:'값', alertMsg:'알림문구', active:'활성' },
+    playbook: { title:'플레이북', principles:'투자원칙', goals:'목표', watchlist:'관심종목', addPrinciple:'+ 원칙추가', addGoal:'+ 목표추가', addWatch:'+ 관심종목추가', moveToPortfolio:'포트폴리오에 추가', noWatchlist:'관심종목이 없습니다.' },
+    mydb: { title:'내 데이터베이스', exportXlsx:'엑셀 내보내기', exportJson:'JSON 내보내기', importJson:'JSON 가져오기', stocks:'종목', trades:'매매', news:'뉴스' },
+    settings: { title:'설정', display:'화면', theme:'테마', light:'라이트', dark:'다크', language:'언어', currency:'달러종목 표시 통화', accounts:'계좌', categories:'카테고리', data:'데이터', exportJson:'JSON 내보내기', importJson:'JSON 가져오기', reset:'전체 초기화', resetConfirm:'모든 데이터가 삭제됩니다. 되돌릴 수 없습니다.', usd:'달러(USD)', krw:'원화(₩)', addCustom:'+ 추가', save:'저장', cancel:'취소', close:'닫기' },
+    common: { edit:'수정', delete:'삭제', confirm:'확인', close:'닫기', buy:'매수', sell:'매도', memo:'메모', date:'날짜', add:'추가', save:'저장', cancel:'취소', name:'이름', search:'검색...', na:'--' }
+  }
+};
+function t(path) {
+  return path.split('.').reduce((o,k) => o?.[k], i18n[db.settings?.language||'en']) ?? path;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION 3 — COMPUTED / DERIVED HELPERS
+═══════════════════════════════════════════════════════════ */
+function getAccounts()   { return [...PRESET_ACCOUNTS, ...db.settings.customAccounts]; }
+function getCategories() { return [...PRESET_CATEGORIES, ...db.settings.customCategories]; }
+
+function toKRW(value, currency) {
+  if (currency === 'USD') return value * db.exchangeRate.USDKRW;
+  return value;
+}
+function calcStock(s) {
+  const cp = s.currentPrice;
+  const cv  = cp != null ? s.holdings * cp : null;
+  const ia  = s.holdings * s.avgPrice;
+  const pa  = cv != null ? cv - ia : null;
+  const pr  = (pa != null && ia > 0) ? (pa / ia) * 100 : null;
+  return { ...s, currentValue:cv, investedAmount:ia, profitAmount:pa, profitRate:pr };
+}
+function totalPortfolioValue() {
+  return db.stocks.reduce((sum, s) => {
+    const cp = s.currentPrice;
+    if (cp == null || s.holdings <= 0) return sum;
+    return sum + toKRW(s.holdings * cp, s.currency);
+  }, 0);
+}
+function totalInvestedValue() {
+  return db.trades
+    .filter(t => t.type === 'buy')
+    .reduce((sum, t) => {
+      const s = db.stocks.find(x => x.id === t.stockId);
+      return sum + toKRW(t.quantity * t.price, s?.currency || 'USD');
+    }, 0);
+}
+function formatNum(n, dec=0, prefix='') {
+  if (n == null || isNaN(n)) return t('common.na');
+  const lang = db.settings.language === 'ko' ? 'ko-KR' : 'en-US';
+  return prefix + n.toLocaleString(lang, { minimumFractionDigits:dec, maximumFractionDigits:dec });
+}
+function formatKRW(n) {
+  if (n == null || isNaN(n)) return t('common.na');
+  if (db.settings.language === 'ko') return '₩' + formatNum(n, 0);
+  return '₩' + formatNum(n, 0);
+}
+function formatPrice(n, currency) {
+  if (n == null || isNaN(n)) return t('common.na');
+  if (currency === 'USD' && db.settings.currency === 'USD') return '$' + formatNum(n, 2);
+  return '₩' + formatNum(toKRW(n, currency), 0);
+}
+function formatPct(n) {
+  if (n == null || isNaN(n)) return t('common.na');
+  const sym = n >= 0 ? '▲' : '▼';
+  return `${sym}${Math.abs(n).toFixed(2)}%`;
+}
+function plClass(n) {
+  if (n == null || isNaN(n)) return 'neutral-text';
+  return n >= 0 ? 'profit-text' : 'loss-text';
+}
+function formatDate(d) {
+  if (!d) return '';
+  const dt = new Date(d);
+  if (db.settings.language === 'ko') return dt.toLocaleDateString('ko-KR', {year:'numeric',month:'2-digit',day:'2-digit'}).replace(/\. /g,'.').replace(/\.$/,'');
+  return dt.toLocaleDateString('en-US', {month:'2-digit',day:'2-digit',year:'numeric'});
+}
+function today() { return new Date().toISOString().slice(0,10); }
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION 4 — TOAST UTILITY
+═══════════════════════════════════════════════════════════ */
+function toast(msg, type='info') {
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION 5 — YAHOO FINANCE API
+═══════════════════════════════════════════════════════════ */
+const PROXY = 'https://corsproxy.io/?';
+function yahooTicker(s) {
+  if (s.exchange === 'KR') return s.ticker + (s.ticker.length === 6 ? '.KS' : '');
+  return s.ticker;
+}
+async function fetchPrice(s) {
+  const url = PROXY + encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${yahooTicker(s)}`);
+  const r = await fetch(url);
+  const d = await r.json();
+  return d.chart.result[0].meta.regularMarketPrice;
+}
+async function fetchExchangeRate() {
+  const url = PROXY + encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/KRW=X`);
+  const r = await fetch(url);
+  const d = await r.json();
+  return d.chart.result[0].meta.regularMarketPrice;
+}
+async function fetchSearchResults(query) {
+  const url = PROXY + encodeURIComponent(`https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=8&lang=en-US`);
+  const r = await fetch(url);
+  const d = await r.json();
+  return d.quotes || [];
+}
+async function fetch30DayChart(s) {
+  const url = PROXY + encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${yahooTicker(s)}?interval=1d&range=1mo`);
+  const r = await fetch(url);
+  const d = await r.json();
+  const res = d.chart.result[0];
+  return { timestamps: res.timestamp, closes: res.indicators.quote[0].close };
+}
+
+let refreshing = false;
+async function refreshAllPrices() {
+  if (refreshing) return;
+  refreshing = true;
+  const btn = document.querySelector('[data-action="refresh"]');
+  if (btn) { btn.disabled = true; btn.textContent = '↻ Loading...'; }
+  try {
+    const rate = await fetchExchangeRate();
+    db.exchangeRate = { USDKRW: rate, updatedAt: new Date().toISOString() };
+    saveDB();
+  } catch(e) { /* keep cached */ }
+
+  for (const stock of db.stocks) {
+    const cell = document.querySelector(`[data-price-cell="${stock.id}"]`);
+    if (cell) cell.classList.add('shimmer');
+    try {
+      stock.currentPrice = await fetchPrice(stock);
+      stock.priceUpdatedAt = new Date().toISOString();
+      stock.stale = false;
+    } catch(e) { stock.stale = true; }
+    saveDB();
+    if (cell) {
+      cell.classList.remove('shimmer');
+      cell.textContent = formatPrice(stock.currentPrice, stock.currency);
+      if (stock.stale) cell.innerHTML += ' <span class="stale-icon" title="Stale">⚠</span>';
+    }
+    await new Promise(r => setTimeout(r, 300));
+  }
+  refreshing = false;
+  if (btn) { btn.disabled = false; btn.textContent = t('dashboard.refreshPrices'); }
+  if (currentView === 'dashboard') renderDashboard();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION 6 — ROUTER + HOME SCREEN
+═══════════════════════════════════════════════════════════ */
+let currentView = 'home';
+const chartInstances = new Map();
+function destroyCharts() { chartInstances.forEach(c => c.destroy()); chartInstances.clear(); }
+
+const VIEW_META = [
+  { id:'dashboard', icon:'◈', label:'Dashboard',  desc:'Portfolio overview & stock table', color:'#2563EB' },
+  { id:'graphs',    icon:'◉', label:'Graphs',     desc:'Charts & allocation breakdown',    color:'#8B5CF6' },
+  { id:'tradelog',  icon:'⊕', label:'Trade Log',  desc:'Buy/sell history & recording',     color:'#059669' },
+  { id:'news',      icon:'◎', label:'News',       desc:'News scrapbook with stock tags',   color:'#0891B2' },
+  { id:'myrule',    icon:'⚡', label:'My Rule',    desc:'Alerts & rule engine',             color:'#D97706' },
+  { id:'playbook',  icon:'◷', label:'Playbook',   desc:'Principles, goals & watchlist',    color:'#7C3AED' },
+  { id:'mydb',      icon:'▦', label:'My DB',      desc:'Raw data + Excel/JSON export',     color:'#475569' },
+  { id:'settings',  icon:'⚙', label:'Settings',   desc:'Theme, language & preferences',   color:'#64748B' },
+];
+
+function renderHome() {
+  const total     = totalPortfolioValue();
+  const numH      = db.stocks.filter(s => s.holdings > 0).length;
+  const triggered = evaluateRules();
+  const app = document.getElementById('app');
+  app.innerHTML = `
+  <div class="home-screen">
+    <div class="home-brand">
+      <span class="home-brand-icon">◈</span>
+      <span class="home-brand-name">STOCK MGR</span>
+    </div>
+    <div class="home-subtitle">${numH} holdings · ${total > 0 ? formatKRW(total) : 'prices not loaded'}</div>
+    <div class="home-grid">
+      ${VIEW_META.map(v => {
+        let badge = '';
+        if (v.id === 'dashboard' && numH > 0)           badge = numH + ' stocks';
+        if (v.id === 'myrule'   && triggered.length > 0) badge = '⚡ ' + triggered.length;
+        if (v.id === 'tradelog' && db.trades.length > 0) badge = db.trades.length + ' trades';
+        if (v.id === 'news'     && db.news.length > 0)   badge = db.news.length + ' items';
+        return `<button class="home-tile" data-goto="${v.id}" style="--tile-color:${v.color}">
+          <div class="home-tile-icon">${v.icon}</div>
+          <div class="home-tile-label">${v.label}</div>
+          <div class="home-tile-desc">${v.desc}</div>
+          ${badge ? `<span class="home-tile-badge">${badge}</span>` : ''}
+        </button>`;
+      }).join('')}
+    </div>
+  </div>`;
+  app.querySelectorAll('[data-goto]').forEach(b =>
+    b.addEventListener('click', () => navigate(b.dataset.goto))
+  );
+}
+
+// Views write into this element instead of #app directly
+function getViewRoot() {
+  return document.getElementById('view-root') || document.getElementById('app');
+}
+// Patch: all renderers call document.getElementById('app') — we intercept via a proxy div
+let _viewRoot = null;
+
+function navigate(viewId) {
+  currentView = viewId;
+  saveView(viewId);
+  destroyCharts();
+
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+
+  if (viewId === 'home') { renderHome(); return; }
+
+  const meta = VIEW_META.find(v => v.id === viewId);
+
+  // Topbar
+  const topbar = document.createElement('div');
+  topbar.className = 'view-topbar';
+  topbar.innerHTML = `
+    <button class="back-btn" id="back-home">← Home</button>
+    <span class="topbar-title">${meta?.icon || ''} ${meta?.label || viewId}</span>
+    <span class="topbar-spacer"></span>`;
+  app.appendChild(topbar);
+  topbar.querySelector('#back-home').addEventListener('click', () => navigate('home'));
+
+  // View root div — renderers write here
+  const root = document.createElement('div');
+  root.id = 'view-root';
+  app.appendChild(root);
+
+  // Temporarily override getElementById so renderers that do
+  // document.getElementById('app').innerHTML = ... write into #view-root instead
+  const origGetById = document.getElementById.bind(document);
+  document.getElementById = function(id) {
+    if (id === 'app') return root;
+    return origGetById(id);
+  };
+
+  const map = { dashboard:renderDashboard, graphs:renderGraphs, tradelog:renderTradelog,
+                news:renderNews, myrule:renderMyrule, playbook:renderPlaybook,
+                mydb:renderMydb, settings:renderSettings };
+  (map[viewId] || renderDashboard)();
+
+  // Restore original
+  document.getElementById = origGetById;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION 7 — DASHBOARD
+═══════════════════════════════════════════════════════════ */
+let dashFilter = { account:'all', category:'all', exchange:'all' };
+let dashSort   = { col:'name', dir:1 };
+
+function renderDashboard() {
+  const total   = totalPortfolioValue();
+  const totalPL = db.stocks.reduce((s, st) => {
+    const c = calcStock(st);
+    return s + (c.profitAmount != null ? toKRW(c.profitAmount, st.currency) : 0);
+  }, 0);
+  const numH = db.stocks.filter(s => s.holdings > 0).length;
+  const rate = db.exchangeRate.USDKRW;
+  const totalPLpct = total > 0 ? (totalPL / (total - totalPL)) * 100 : null;
+
+  const app = document.getElementById('app');
+  app.innerHTML = `
+  <div class="view">
+    <div class="view-header">
+      <span class="view-title">${t('dashboard.title')}</span>
+      <div class="flex-row">
+        <button class="btn btn-secondary btn-sm" data-action="refresh">${t('dashboard.refreshPrices')}</button>
+        <button class="btn btn-primary btn-sm" data-action="add-stock">${t('dashboard.addStock')}</button>
+      </div>
+    </div>
+
+    <div class="stat-strip">
+      <div class="stat-card">
+        <div class="stat-label">${t('dashboard.totalValue')}</div>
+        <div class="stat-value">${total > 0 ? formatKRW(total) : '--'}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">${t('dashboard.totalPL')}</div>
+        <div class="stat-value ${plClass(totalPL)}">${total > 0 ? formatKRW(totalPL) : '--'}</div>
+        <div class="stat-sub ${plClass(totalPLpct)}">${totalPLpct != null ? formatPct(totalPLpct) : ''}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">${t('dashboard.numHoldings')}</div>
+        <div class="stat-value mono">${numH}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">${t('dashboard.usdkrw')}</div>
+        <div class="stat-value mono">${formatNum(rate, 2)}</div>
+        <div class="stat-sub text-muted">${db.exchangeRate.updatedAt ? formatDate(db.exchangeRate.updatedAt) : 'cached'}</div>
+      </div>
+    </div>
+
+    <div class="table-toolbar">
+      <select class="filter-select" id="f-account">
+        <option value="all">All Accounts</option>
+        ${getAccounts().map(a => `<option value="${a}" ${dashFilter.account===a?'selected':''}>${a}</option>`).join('')}
+      </select>
+      <select class="filter-select" id="f-category">
+        <option value="all">All Categories</option>
+        ${getCategories().map(c => `<option value="${c}" ${dashFilter.category===c?'selected':''}>${c}</option>`).join('')}
+      </select>
+      <select class="filter-select" id="f-exchange">
+        <option value="all">US + KR</option>
+        <option value="US" ${dashFilter.exchange==='US'?'selected':''}>US Only</option>
+        <option value="KR" ${dashFilter.exchange==='KR'?'selected':''}>KR Only</option>
+      </select>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-scroll">
+        ${renderDashTable(total)}
+      </div>
+    </div>
+  </div>`;
+
+  document.querySelector('[data-action="refresh"]').addEventListener('click', refreshAllPrices);
+  document.querySelector('[data-action="add-stock"]').addEventListener('click', openAddStockModal);
+  document.getElementById('f-account').addEventListener('change',  e => { dashFilter.account   = e.target.value; renderDashboard(); });
+  document.getElementById('f-category').addEventListener('change', e => { dashFilter.category  = e.target.value; renderDashboard(); });
+  document.getElementById('f-exchange').addEventListener('change', e => { dashFilter.exchange  = e.target.value; renderDashboard(); });
+  document.querySelectorAll('th[data-col]').forEach(th => th.addEventListener('click', () => {
+    const col = th.dataset.col;
+    if (dashSort.col === col) dashSort.dir *= -1; else { dashSort.col = col; dashSort.dir = 1; }
+    renderDashboard();
+  }));
+  document.querySelectorAll('.stock-row').forEach(tr => {
+    tr.addEventListener('click', () => openStockDetail(tr.dataset.stockId));
+  });
+}
+
+function renderDashTable(total) {
+  const cols = [
+    {key:'name', label:t('cols.name')}, {key:'ticker', label:t('cols.ticker')},
+    {key:'account', label:t('cols.account')}, {key:'category', label:t('cols.category')},
+    {key:'holdings', label:t('cols.shares')}, {key:'avgPrice', label:t('cols.avgPrice')},
+    {key:'currentPrice', label:t('cols.curPrice')}, {key:'profitAmount', label:t('cols.pl')},
+    {key:'profitRate', label:t('cols.plPct')}, {key:'allocation', label:t('cols.alloc')}
+  ];
+
+  let rows = db.stocks
+    .filter(s => (dashFilter.account === 'all' || s.account === dashFilter.account)
+              && (dashFilter.category === 'all' || s.category === dashFilter.category)
+              && (dashFilter.exchange === 'all' || s.exchange === dashFilter.exchange))
+    .map(s => { const c = calcStock(s); return { ...c, allocation: c.currentValue != null ? toKRW(c.currentValue,s.currency)/total*100 : null }; });
+
+  rows.sort((a,b) => {
+    const va = a[dashSort.col], vb = b[dashSort.col];
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1; if (vb == null) return -1;
+    if (typeof va === 'string') return va.localeCompare(vb) * dashSort.dir;
+    return (va - vb) * dashSort.dir;
+  });
+
+  const arrowFor = key => {
+    if (dashSort.col !== key) return '<span class="sort-arrow">⇅</span>';
+    return `<span class="sort-arrow">${dashSort.dir > 0 ? '↑' : '↓'}</span>`;
+  };
+
+  return `<table>
+    <thead><tr>
+      ${cols.map(c => `<th data-col="${c.key}" class="${dashSort.col===c.key?'sorted':''}">${c.label}${arrowFor(c.key)}</th>`).join('')}
+    </tr></thead>
+    <tbody>
+      ${rows.length === 0 ? `<tr><td colspan="${cols.length}" class="empty-state">No stocks yet. Click "+ Add Stock" to begin.</td></tr>` :
+        rows.map(s => `
+        <tr class="stock-row ${s.holdings===0?'row-zero':''}" data-stock-id="${s.id}" style="cursor:pointer">
+          <td><span class="fw-600">${s.name}</span></td>
+          <td><span class="mono" style="color:var(--accent)">${s.ticker}</span></td>
+          <td><span class="text-sm">${s.account}</span></td>
+          <td><span class="text-sm">${s.category}</span></td>
+          <td class="td-num">${formatNum(s.holdings, s.holdings%1===0?0:4)}</td>
+          <td class="td-num">${s.currency==='USD' ? '$'+formatNum(s.avgPrice,2) : '₩'+formatNum(s.avgPrice,0)}</td>
+          <td class="td-num" data-price-cell="${s.id}">
+            ${s.currentPrice == null ? '<span class="shimmer">loading</span>' : formatPrice(s.currentPrice, s.currency)}
+            ${s.stale ? '<span class="stale-icon" title="Stale">⚠</span>' : ''}
+          </td>
+          <td class="td-num ${plClass(s.profitAmount)}">${s.profitAmount != null ? (s.currency==='USD' && db.settings.currency==='USD' ? (s.profitAmount>=0?'+':'')+formatNum(s.profitAmount,2,'$') : (s.profitAmount>=0?'+':'')+formatKRW(toKRW(s.profitAmount,s.currency))) : '--'}</td>
+          <td class="td-num ${plClass(s.profitRate)}">${s.profitRate != null ? formatPct(s.profitRate) : '--'}</td>
+          <td class="td-num">${s.allocation != null ? formatNum(s.allocation,1)+'%' : '--'}</td>
+        </tr>`).join('')}
+    </tbody></table>`;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION 8 — ADD STOCK MODAL
+═══════════════════════════════════════════════════════════ */
+function openAddStockModal(prefill = {}) {
+  let selected = null;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal" id="add-stock-modal">
+      <div class="modal-header">
+        <span class="modal-title">${t('dashboard.addStock')}</span>
+        <button class="modal-close btn">✕</button>
+      </div>
+      <div id="search-phase">
+        <div class="form-group">
+          <label class="form-label">Search Ticker / Company Name</label>
+          <div class="flex-row">
+            <input class="form-input" id="stock-search-input" placeholder="e.g. NVDA, Apple, 삼성전자" value="${prefill.ticker||''}">
+            <button class="btn btn-primary" id="stock-search-btn">Search</button>
+          </div>
+        </div>
+        <div id="search-results-wrap"></div>
+      </div>
+      <div id="add-form-phase" style="display:none">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Name</label>
+            <input class="form-input" id="af-name" value="${prefill.name||''}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ticker</label>
+            <input class="form-input mono" id="af-ticker" value="${prefill.ticker||''}">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Exchange</label>
+          <div class="toggle-group">
+            <button class="toggle-btn ${prefill.exchange==='KR'?'':'active'}" data-exch="US">🇺🇸 US</button>
+            <button class="toggle-btn ${prefill.exchange==='KR'?'active':''}" data-exch="KR">🇰🇷 KR</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Holdings</label>
+            <input class="form-input mono" id="af-holdings" type="number" min="0" step="any" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Avg Price</label>
+            <input class="form-input mono" id="af-avgprice" type="number" min="0" step="any" placeholder="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select class="form-select" id="af-category">
+              ${getCategories().map(c=>`<option>${c}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Account</label>
+            <select class="form-select" id="af-account">
+              ${getAccounts().map(a=>`<option>${a}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Memo</label>
+          <textarea class="form-textarea" id="af-memo" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="af-cancel">${t('common.cancel')}</button>
+        <button class="btn btn-primary" id="af-save" style="display:none">${t('common.save')}</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  let selExch = prefill.exchange === 'KR' ? 'KR' : 'US';
+
+  overlay.querySelector('.modal-close').onclick = () => overlay.remove();
+  overlay.querySelector('#af-cancel').onclick    = () => overlay.remove();
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+  overlay.querySelectorAll('[data-exch]').forEach(b => b.addEventListener('click', () => {
+    selExch = b.dataset.exch;
+    overlay.querySelectorAll('[data-exch]').forEach(x => x.classList.toggle('active', x.dataset.exch === selExch));
+  }));
+
+  function showForm(data) {
+    overlay.querySelector('#search-phase').style.display = 'none';
+    overlay.querySelector('#add-form-phase').style.display = 'block';
+    overlay.querySelector('#af-save').style.display = 'inline-flex';
+    if (data) {
+      overlay.querySelector('#af-name').value   = data.shortname || data.longname || '';
+      overlay.querySelector('#af-ticker').value = data.symbol || '';
+      selExch = (data.exchange === 'KSC' || data.exchange === 'KOE' || data.quoteType === 'EQUITY' && /^\d{6}$/.test(data.symbol)) ? 'KR' : 'US';
+      overlay.querySelectorAll('[data-exch]').forEach(x => x.classList.toggle('active', x.dataset.exch === selExch));
+    }
+  }
+  if (prefill.ticker) showForm(null);
+
+  overlay.querySelector('#stock-search-btn').onclick = async () => {
+    const q = overlay.querySelector('#stock-search-input').value.trim();
+    if (!q) return;
+    const wrap = overlay.querySelector('#search-results-wrap');
+    wrap.innerHTML = '<div class="text-muted text-sm" style="padding:8px">Searching...</div>';
+    try {
+      const results = await fetchSearchResults(q);
+      if (!results.length) { wrap.innerHTML = '<div class="text-muted text-sm" style="padding:8px">No results found</div>'; return; }
+      wrap.innerHTML = `<div class="search-results">${results.filter(r=>r.symbol&&r.shortname).map(r=>`
+        <div class="search-result-item" data-symbol="${r.symbol}" data-name="${(r.shortname||'').replace(/"/g,'')}" data-exch="${r.exchange||''}">
+          <div>
+            <div class="search-result-name">${r.shortname||r.symbol}</div>
+            <div class="search-result-exchange text-xs">${r.exchange||''} · ${r.quoteType||''}</div>
+          </div>
+          <span class="search-result-ticker">${r.symbol}</span>
+        </div>`).join('')}</div>`;
+      wrap.querySelectorAll('.search-result-item').forEach(item => item.addEventListener('click', () => {
+        showForm({ symbol:item.dataset.symbol, shortname:item.dataset.name, exchange:item.dataset.exch });
+      }));
+    } catch(e) { wrap.innerHTML = '<div class="text-muted text-sm" style="padding:8px">Search failed. Try entering ticker manually.</div>'; showForm(null); }
+  };
+
+  overlay.querySelector('#stock-search-input').addEventListener('keydown', e => { if (e.key==='Enter') overlay.querySelector('#stock-search-btn').click(); });
+
+  overlay.querySelector('#af-save').onclick = () => {
+    const name = overlay.querySelector('#af-name').value.trim();
+    const ticker = overlay.querySelector('#af-ticker').value.trim().toUpperCase();
+    const holdings = parseFloat(overlay.querySelector('#af-holdings').value);
+    const avgPrice = parseFloat(overlay.querySelector('#af-avgprice').value);
+    if (!name || !ticker) { toast('Name and ticker required', 'error'); return; }
+    if (isNaN(holdings) || holdings < 0) { toast('Invalid holdings', 'error'); return; }
+    if (isNaN(avgPrice) || avgPrice < 0) { toast('Invalid avg price', 'error'); return; }
+    const newStock = {
+      id: uid(), ticker, name, exchange: selExch,
+      currency: selExch === 'KR' ? 'KRW' : 'USD',
+      holdings, avgPrice,
+      category: overlay.querySelector('#af-category').value,
+      account:  overlay.querySelector('#af-account').value,
+      currentPrice: null, priceUpdatedAt: null, stale: false,
+      memo: overlay.querySelector('#af-memo').value
+    };
+    db.stocks.push(newStock);
+    if (holdings > 0) {
+      db.trades.push({ id:uid(), stockId:newStock.id, date:today(), type:'buy', quantity:holdings, price:avgPrice, memo:'Initial position' });
+    }
+    saveDB();
+    overlay.remove();
+    toast(`${name} added!`, 'success');
+    renderDashboard();
+    fetchPrice(newStock).then(p => { newStock.currentPrice=p; newStock.priceUpdatedAt=new Date().toISOString(); saveDB(); if(currentView==='dashboard') renderDashboard(); }).catch(()=>{});
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION 9 — TRADE LOG
+═══════════════════════════════════════════════════════════ */
+function recalcStock(stockId) {
+  const stock = db.stocks.find(s => s.id === stockId);
+  if (!stock) return;
+  const trades = db.trades.filter(t => t.stockId === stockId).sort((a,b) => new Date(a.date)-new Date(b.date));
+  let h=0, cost=0;
+  for (const tr of trades) {
+    if (tr.type==='buy')  { cost += tr.quantity * tr.price; h += tr.quantity; }
+    else                  { h = Math.max(0, h - tr.quantity); }
+  }
+  stock.holdings = h;
+  stock.avgPrice = h > 0 ? cost/h : stock.avgPrice;
+  saveDB();
+}
+
+let tlFilter = { stockId:'all', type:'all', from:'', to:'' };
+
+function renderTradelog() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+  <div class="view">
+    <div class="view-header">
+      <span class="view-title">${t('trade.title')}</span>
+      <button class="btn btn-primary btn-sm" data-action="record-trade">${t('trade.recordTrade')}</button>
+    </div>
+    <div class="table-toolbar">
+      <select class="filter-select" id="tl-stock">
+        <option value="all">All Stocks</option>
+        ${db.stocks.map(s=>`<option value="${s.id}" ${tlFilter.stockId===s.id?'selected':''}>${s.name} (${s.ticker})</option>`).join('')}
+      </select>
+      <select class="filter-select" id="tl-type">
+        <option value="all">All</option>
+        <option value="buy" ${tlFilter.type==='buy'?'selected':''}>Buy</option>
+        <option value="sell" ${tlFilter.type==='sell'?'selected':''}>Sell</option>
+      </select>
+      <input type="date" class="filter-select" id="tl-from" value="${tlFilter.from}" style="width:130px">
+      <input type="date" class="filter-select" id="tl-to"   value="${tlFilter.to}"   style="width:130px">
+    </div>
+    <div class="table-wrap"><div class="table-scroll">${renderTradeTable()}</div></div>
+  </div>`;
+
+  app.querySelector('[data-action="record-trade"]').addEventListener('click', () => openTradeModal());
+  app.querySelector('#tl-stock').addEventListener('change', e => { tlFilter.stockId=e.target.value; renderTradelog(); });
+  app.querySelector('#tl-type').addEventListener('change',  e => { tlFilter.type=e.target.value;    renderTradelog(); });
+  app.querySelector('#tl-from').addEventListener('change',  e => { tlFilter.from=e.target.value;    renderTradelog(); });
+  app.querySelector('#tl-to').addEventListener('change',    e => { tlFilter.to=e.target.value;      renderTradelog(); });
+  app.querySelectorAll('[data-delete-trade]').forEach(b => b.addEventListener('click', e => {
+    if (!confirm('Delete this trade?')) return;
+    const id = b.dataset.deleteTrade;
+    const tr = db.trades.find(x=>x.id===id);
+    db.trades = db.trades.filter(x=>x.id!==id);
+    if (tr) recalcStock(tr.stockId);
+    renderTradelog();
+  }));
+}
+
+function renderTradeTable() {
+  let rows = db.trades.slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if (tlFilter.stockId !== 'all') rows = rows.filter(t => t.stockId === tlFilter.stockId);
+  if (tlFilter.type !== 'all')    rows = rows.filter(t => t.type === tlFilter.type);
+  if (tlFilter.from) rows = rows.filter(t => t.date >= tlFilter.from);
+  if (tlFilter.to)   rows = rows.filter(t => t.date <= tlFilter.to);
+  if (!rows.length) return `<table><tbody><tr><td colspan="8" class="empty-state">${t('trade.noTrades')}</td></tr></tbody></table>`;
+  return `<table>
+    <thead><tr>
+      <th>${t('trade.date')}</th><th>${t('trade.stock')}</th><th>${t('trade.type')}</th>
+      <th>${t('trade.qty')}</th><th>${t('trade.price')}</th><th>${t('trade.total')}</th>
+      <th>${t('trade.memo')}</th><th></th>
+    </tr></thead>
+    <tbody>${rows.map(tr => {
+      const s = db.stocks.find(x=>x.id===tr.stockId);
+      const total = tr.quantity * tr.price;
+      return `<tr>
+        <td class="mono text-sm">${formatDate(tr.date)}</td>
+        <td><span class="fw-600">${s?.name||'?'}</span> <span class="mono text-xs" style="color:var(--accent)">${s?.ticker||''}</span></td>
+        <td><span class="badge badge-${tr.type}">${tr.type.toUpperCase()}</span></td>
+        <td class="td-num">${formatNum(tr.quantity,4)}</td>
+        <td class="td-num">${s?.currency==='KRW'?'₩':'$'}${formatNum(tr.price,2)}</td>
+        <td class="td-num fw-600">${s?.currency==='KRW'?'₩':'$'}${formatNum(total,2)}</td>
+        <td class="text-muted text-sm">${tr.memo||''}</td>
+        <td><button class="btn btn-ghost btn-sm btn-icon" data-delete-trade="${tr.id}" title="Delete">✕</button></td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+function openTradeModal(prefillStockId = null) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  let selType = 'buy';
+  overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">${t('trade.recordTrade')}</span>
+        <button class="modal-close btn">✕</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('trade.stock')}</label>
+        <select class="form-select" id="tm-stock">
+          <option value="">-- Select --</option>
+          ${db.stocks.map(s=>`<option value="${s.id}" ${s.id===prefillStockId?'selected':''}>${s.name} (${s.ticker})</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('trade.date')}</label>
+        <input class="form-input" id="tm-date" type="date" value="${today()}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('trade.type')}</label>
+        <div class="toggle-group">
+          <button class="toggle-btn active buy" data-type="buy">${t('trade.buy')}</button>
+          <button class="toggle-btn" data-type="sell">${t('trade.sell')}</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">${t('trade.qty')}</label>
+          <input class="form-input mono" id="tm-qty" type="number" min="0.0001" step="any" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">${t('trade.price')}</label>
+          <input class="form-input mono" id="tm-price" type="number" min="0" step="any" placeholder="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('trade.memo')}</label>
+        <textarea class="form-textarea" id="tm-memo" rows="2"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="tm-cancel">${t('common.cancel')}</button>
+        <button class="btn btn-primary"   id="tm-save">${t('common.save')}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('.modal-close').onclick  = () => overlay.remove();
+  overlay.querySelector('#tm-cancel').onclick     = () => overlay.remove();
+  overlay.addEventListener('click', e => { if (e.target===overlay) overlay.remove(); });
+
+  overlay.querySelectorAll('[data-type]').forEach(b => b.addEventListener('click', () => {
+    selType = b.dataset.type;
+    overlay.querySelectorAll('[data-type]').forEach(x => {
+      x.classList.toggle('active', x.dataset.type===selType);
+      x.classList.toggle('buy',    x.dataset.type==='buy' && selType==='buy');
+      x.classList.toggle('sell',   x.dataset.type==='sell' && selType==='sell');
+    });
+  }));
+
+  // Auto-fill price from currentPrice
+  overlay.querySelector('#tm-stock').addEventListener('change', e => {
+    const s = db.stocks.find(x=>x.id===e.target.value);
+    if (s?.currentPrice) overlay.querySelector('#tm-price').value = s.currentPrice;
+  });
+  if (prefillStockId) {
+    const s = db.stocks.find(x=>x.id===prefillStockId);
+    if (s?.currentPrice) overlay.querySelector('#tm-price').value = s.currentPrice;
+  }
+
+  overlay.querySelector('#tm-save').onclick = () => {
+    const stockId = overlay.querySelector('#tm-stock').value;
+    const date    = overlay.querySelector('#tm-date').value;
+    const qty     = parseFloat(overlay.querySelector('#tm-qty').value);
+    const price   = parseFloat(overlay.querySelector('#tm-price').value);
+    const memo    = overlay.querySelector('#tm-memo').value;
+    const stock   = db.stocks.find(s=>s.id===stockId);
+    if (!stockId || !stock) { toast('Select a stock', 'error'); return; }
+    if (!date) { toast('Select a date', 'error'); return; }
+    if (isNaN(qty) || qty <= 0) { toast('Invalid quantity', 'error'); return; }
+    if (isNaN(price) || price <= 0) { toast('Invalid price', 'error'); return; }
+    if (selType === 'sell' && qty > stock.holdings) { toast('Insufficient holdings', 'error'); return; }
+    db.trades.push({ id:uid(), stockId, date, type:selType, quantity:qty, price, memo });
+    recalcStock(stockId);
+    overlay.remove();
+    toast('Trade recorded!', 'success');
+    if (currentView === 'tradelog') renderTradelog();
+    else if (currentView === 'dashboard') renderDashboard();
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION 10 — NEWS SCRAPBOOK
+═══════════════════════════════════════════════════════════ */
+let newsFilter = { stockId:'all', from:'', to:'', q:'' };
+
+function renderNews() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+  <div class="view">
+    <div class="view-header">
+      <span class="view-title">${t('news.title')}</span>
+      <button class="btn btn-primary btn-sm" data-action="add-news">${t('news.addNews')}</button>
+    </div>
+    <div class="table-toolbar">
+      <select class="filter-select" id="nf-stock">
+        <option value="all">All Stocks</option>
+        ${db.stocks.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}
+      </select>
+      <input type="date" class="filter-select" id="nf-from" value="${newsFilter.from}" style="width:130px">
+      <input type="date" class="filter-select" id="nf-to"   value="${newsFilter.to}"   style="width:130px">
+      <input class="filter-select" id="nf-q" placeholder="Search..." value="${newsFilter.q}" style="width:160px">
+    </div>
+    <div id="news-list">${renderNewsList()}</div>
+  </div>`;
+
+  app.querySelector('[data-action="add-news"]').addEventListener('click', () => openNewsModal());
+  app.querySelector('#nf-stock').addEventListener('change', e=>{newsFilter.stockId=e.target.value;app.querySelector('#news-list').innerHTML=renderNewsList();});
+  app.querySelector('#nf-from').addEventListener('change',  e=>{newsFilter.from=e.target.value;app.querySelector('#news-list').innerHTML=renderNewsList();});
+  app.querySelector('#nf-to').addEventListener('change',    e=>{newsFilter.to=e.target.value;app.querySelector('#news-list').innerHTML=renderNewsList();});
+  app.querySelector('#nf-q').addEventListener('input',      e=>{newsFilter.q=e.target.value;app.querySelector('#news-list').innerHTML=renderNewsList();});
+  bindNewsActions();
+}
+
+function renderNewsList() {
+  let items = db.news.slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if (newsFilter.stockId !== 'all') items = items.filter(n => n.relatedStockIds.includes(newsFilter.stockId));
+  if (newsFilter.from) items = items.filter(n => n.date >= newsFilter.from);
+  if (newsFilter.to)   items = items.filter(n => n.date <= newsFilter.to);
+  if (newsFilter.q) { const q=newsFilter.q.toLowerCase(); items = items.filter(n => n.summary.toLowerCase().includes(q) || n.source.toLowerCase().includes(q)); }
+  if (!items.length) return `<div class="empty-state"><div class="empty-state-icon">📰</div>${t('news.noNews')}</div>`;
+  return items.map(n => {
+    const related = n.relatedStockIds.map(id => db.stocks.find(s=>s.id===id)).filter(Boolean);
+    return `<div class="card mb-12">
+      <div class="flex-row" style="justify-content:space-between;margin-bottom:8px">
+        <div class="flex-row">
+          <span class="mono text-sm text-muted">${formatDate(n.date)}</span>
+          ${n.url ? `<a href="${n.url}" target="_blank" class="fw-600 text-sm">${n.source}</a>` : `<span class="fw-600 text-sm">${n.source}</span>`}
+        </div>
+        <div class="flex-row">
+          <button class="btn btn-ghost btn-sm btn-icon" data-edit-news="${n.id}">✏</button>
+          <button class="btn btn-ghost btn-sm btn-icon" data-delete-news="${n.id}">✕</button>
+        </div>
+      </div>
+      <p class="text-sm" style="color:var(--text2);margin-bottom:8px;line-height:1.5">${n.summary}</p>
+      <div class="flex-row flex-wrap gap-4">${related.map(s=>`<span class="tag-pill" data-filter-stock="${s.id}">${s.name}</span>`).join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+function bindNewsActions() {
+  const app = document.getElementById('app');
+  app.querySelectorAll('[data-edit-news]').forEach(b => b.addEventListener('click', () => {
+    const n = db.news.find(x=>x.id===b.dataset.editNews); if(n) openNewsModal(n);
+  }));
+  app.querySelectorAll('[data-delete-news]').forEach(b => b.addEventListener('click', () => {
+    if (!confirm('Delete this news item?')) return;
+    db.news = db.news.filter(n=>n.id!==b.dataset.deleteNews);
+    saveDB(); renderNews();
+  }));
+  app.querySelectorAll('[data-filter-stock]').forEach(p => p.addEventListener('click', () => {
+    newsFilter.stockId = p.dataset.filterStock;
+    document.getElementById('nf-stock').value = newsFilter.stockId;
+    app.querySelector('#news-list').innerHTML = renderNewsList();
+    bindNewsActions();
+  }));
+}
+
+function openNewsModal(existing = null) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  const sel = existing ? existing.relatedStockIds : [];
+  overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">${existing ? 'Edit News' : t('news.addNews')}</span>
+        <button class="modal-close btn">✕</button>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">${t('news.source')}</label>
+          <input class="form-input" id="nm-source" value="${existing?.source||''}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">${t('trade.date')}</label>
+          <input class="form-input" id="nm-date" type="date" value="${existing?.date||today()}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('news.url')}</label>
+        <input class="form-input" id="nm-url" type="url" value="${existing?.url||''}" placeholder="https://...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('news.summary')}</label>
+        <textarea class="form-textarea" id="nm-summary" rows="3">${existing?.summary||''}</textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('news.relatedStocks')}</label>
+        <div class="flex-row flex-wrap gap-4" id="nm-stocks">
+          ${db.stocks.map(s=>`<span class="tag-pill ${sel.includes(s.id)?'selected':''}" data-stock-id="${s.id}">${s.name}</span>`).join('')}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="nm-cancel">${t('common.cancel')}</button>
+        <button class="btn btn-primary"   id="nm-save">${t('common.save')}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('.modal-close').onclick = () => overlay.remove();
+  overlay.querySelector('#nm-cancel').onclick   = () => overlay.remove();
+  overlay.addEventListener('click', e => { if (e.target===overlay) overlay.remove(); });
+  overlay.querySelectorAll('[data-stock-id]').forEach(p => p.addEventListener('click', () => p.classList.toggle('selected')));
+
+  overlay.querySelector('#nm-save').onclick = () => {
+    const source  = overlay.querySelector('#nm-source').value.trim();
+    const date    = overlay.querySelector('#nm-date').value;
+    const url     = overlay.querySelector('#nm-url').value.trim();
+    const summary = overlay.querySelector('#nm-summary').value.trim();
+    const relatedStockIds = [...overlay.querySelectorAll('[data-stock-id].selected')].map(p=>p.dataset.stockId);
+    if (!source || !summary) { toast('Source and summary required', 'error'); return; }
+    if (existing) {
+      Object.assign(existing, { source, date, url, summary, relatedStockIds });
+    } else {
+      db.news.push({ id:uid(), source, date, url, summary, relatedStockIds });
+    }
+    saveDB(); overlay.remove(); toast('News saved!', 'success'); renderNews();
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION 11 — GRAPHS
+═══════════════════════════════════════════════════════════ */
+const CHART_COLORS = ['#3B82F6','#22C55E','#F59E0B','#EF4444','#8B5CF6','#06B6D4','#F97316','#EC4899'];
+
+function renderGraphs() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+  <div class="view">
+    <div class="view-header"><span class="view-title">Graphs</span></div>
+    <div class="charts-grid">
+      <div class="chart-card"><div class="chart-title">Allocation by Stock</div><div class="chart-canvas-wrap"><canvas id="c-alloc-stock"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Allocation by Category</div><div class="chart-canvas-wrap"><canvas id="c-alloc-cat"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Allocation by Account</div><div class="chart-canvas-wrap"><canvas id="c-alloc-acc"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Profit Rate by Stock</div><div class="chart-canvas-wrap"><canvas id="c-pr-stock"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Profit Rate by Category</div><div class="chart-canvas-wrap"><canvas id="c-pr-cat"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Cumulative P&L</div><div class="chart-canvas-wrap"><canvas id="c-cumpnl"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Monthly Return (Last 6 Months)</div><div class="chart-canvas-wrap"><canvas id="c-monthly"></canvas></div></div>
+    </div>
+  </div>`;
+  initCharts();
+}
+
+function initCharts() {
+  const total = totalPortfolioValue();
+  const isDark = db.settings.theme === 'dark';
+  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  const textColor = isDark ? '#94A3B8' : '#64748B';
+  const baseOpts = { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ labels:{ color:textColor, font:{ size:11 } } } } };
+
+  function mkDonut(id, labels, data) {
+    const ctx = document.getElementById(id);
+    if (!ctx) return;
+    const inst = new Chart(ctx, { type:'doughnut', data:{ labels, datasets:[{ data, backgroundColor:CHART_COLORS, borderWidth:2, borderColor: isDark?'#111827':'#fff' }] }, options:{ ...baseOpts, cutout:'65%' } });
+    chartInstances.set(id, inst);
+  }
+  function mkHBar(id, labels, data) {
+    const ctx = document.getElementById(id);
+    if (!ctx) return;
+    const bgColors = data.map(v => v>=0 ? 'rgba(34,197,94,0.7)' : 'rgba(239,68,68,0.7)');
+    const inst = new Chart(ctx, { type:'bar', data:{ labels, datasets:[{ data, backgroundColor:bgColors, borderRadius:4 }] }, options:{ ...baseOpts, indexAxis:'y', plugins:{ legend:{display:false} }, scales:{ x:{ grid:{color:gridColor}, ticks:{color:textColor, callback:v=>v+'%'} }, y:{ grid:{display:false}, ticks:{color:textColor,font:{size:11}} } } } });
+    chartInstances.set(id, inst);
+  }
+
+  // 1. Allocation by stock
+  const activeStocks = db.stocks.filter(s => s.holdings > 0 && s.currentPrice != null);
+  mkDonut('c-alloc-stock', activeStocks.map(s=>s.name), activeStocks.map(s => toKRW(s.holdings*s.currentPrice, s.currency)));
+
+  // 2. Allocation by category
+  const byCat = {};
+  activeStocks.forEach(s => { byCat[s.category] = (byCat[s.category]||0) + toKRW(s.holdings*s.currentPrice,s.currency); });
+  mkDonut('c-alloc-cat', Object.keys(byCat), Object.values(byCat));
+
+  // 3. Allocation by account
+  const byAcc = {};
+  activeStocks.forEach(s => { byAcc[s.account] = (byAcc[s.account]||0) + toKRW(s.holdings*s.currentPrice,s.currency); });
+  mkDonut('c-alloc-acc', Object.keys(byAcc), Object.values(byAcc));
+
+  // 4. Profit rate by stock
+  const prStocks = activeStocks.map(s=>calcStock(s)).filter(s=>s.profitRate!=null).sort((a,b)=>b.profitRate-a.profitRate);
+  mkHBar('c-pr-stock', prStocks.map(s=>s.name), prStocks.map(s=>parseFloat(s.profitRate.toFixed(2))));
+
+  // 5. Profit rate by category
+  const catPR = {};
+  const catCount = {};
+  db.stocks.forEach(s => {
+    const c = calcStock(s);
+    if (c.profitRate != null) { catPR[s.category]=(catPR[s.category]||0)+c.profitRate; catCount[s.category]=(catCount[s.category]||0)+1; }
+  });
+  const catKeys = Object.keys(catPR).sort((a,b) => catPR[b]/catCount[b] - catPR[a]/catCount[a]);
+  mkHBar('c-pr-cat', catKeys, catKeys.map(k=>parseFloat((catPR[k]/catCount[k]).toFixed(2))));
+
+  // 6. Cumulative P&L
+  const sortedTrades = db.trades.slice().sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const cDates=[], cVals=[];
+  sortedTrades.forEach((tr,i) => {
+    const s = db.stocks.find(x=>x.id===tr.stockId);
+    if (!s || !s.currentPrice) return;
+    const cp = s.currentPrice;
+    const unrealized = db.stocks.reduce((sum,st)=>{
+      if (!st.currentPrice||st.holdings<=0) return sum;
+      return sum + toKRW((st.currentPrice-st.avgPrice)*st.holdings, st.currency);
+    },0);
+    cDates.push(formatDate(tr.date));
+    cVals.push(Math.round(unrealized/10000)/100);
+  });
+  if (cDates.length) {
+    const ctx6 = document.getElementById('c-cumpnl');
+    if (ctx6) {
+      const inst = new Chart(ctx6, { type:'line', data:{ labels:cDates, datasets:[{ data:cVals, borderColor:'#3B82F6', backgroundColor:'rgba(59,130,246,0.1)', fill:true, tension:0.3, pointRadius:3 }] }, options:{ ...baseOpts, plugins:{legend:{display:false}}, scales:{ x:{grid:{color:gridColor},ticks:{color:textColor,maxTicksLimit:6,font:{size:10}}}, y:{grid:{color:gridColor},ticks:{color:textColor,callback:v=>v+'만'}} } } });
+      chartInstances.set('c-cumpnl', inst);
+    }
+  }
+
+  // 7. Monthly return
+  const now = new Date();
+  const months=[], monthVals=[];
+  for (let i=5;i>=0;i--) {
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const label = d.toLocaleDateString('en-US',{month:'short',year:'2-digit'});
+    months.push(label);
+    const monthTrades = db.trades.filter(t=>t.type==='sell'&&t.date.startsWith(key));
+    const pnl = monthTrades.reduce((s,tr)=>{
+      const st=db.stocks.find(x=>x.id===tr.stockId);
+      return s + toKRW((tr.price-st?.avgPrice)*tr.quantity, st?.currency||'USD');
+    },0);
+    monthVals.push(Math.round(pnl/10000)/100);
+  }
+  const ctx7 = document.getElementById('c-monthly');
+  if (ctx7) {
+    const inst = new Chart(ctx7, { type:'bar', data:{ labels:months, datasets:[{ data:monthVals, backgroundColor:monthVals.map(v=>v>=0?'rgba(34,197,94,0.7)':'rgba(239,68,68,0.7)'), borderRadius:4 }] }, options:{ ...baseOpts, plugins:{legend:{display:false}}, scales:{ x:{grid:{display:false},ticks:{color:textColor}}, y:{grid:{color:gridColor},ticks:{color:textColor,callback:v=>v+'만'}} } } });
+    chartInstances.set('c-monthly', inst);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION 12 — MY RULE
+═══════════════════════════════════════════════════════════ */
+function evaluateRules() {
+  const triggered = [];
+  const total = totalPortfolioValue();
+  for (const rule of db.rules.filter(r=>r.active)) {
+    const targets = rule.condition.stockId ? db.stocks.filter(s=>s.id===rule.condition.stockId) : db.stocks;
+    for (const s of targets) {
+      const c = calcStock(s);
+      let actual = null;
+      const m = rule.condition.metric;
+      if (m==='profitRate') actual = c.profitRate;
+      if (m==='lossRate')   actual = c.profitRate != null ? -c.profitRate : null;
+      if (m==='allocation') actual = (c.currentValue!=null&&total>0) ? toKRW(c.currentValue,s.currency)/total*100 : null;
+      if (m==='targetPrice') actual = s.currentPrice;
+      if (actual == null) continue;
+      const v = rule.condition.value;
+      const ops = { gt:actual>v, lt:actual<v, gte:actual>=v, lte:actual<=v };
+      if (ops[rule.condition.operator]) triggered.push({ rule, stock:s, actual });
+    }
+  }
+  return triggered;
+}
+
+const metricLabels  = { profitRate:'Profit Rate %', lossRate:'Loss Rate %', allocation:'Allocation %', targetPrice:'Target Price' };
+const opLabels      = { gt:'>', lt:'<', gte:'≥', lte:'≤' };
+
+function renderMyrule() {
+  const triggered = evaluateRules();
+  const app = document.getElementById('app');
+  app.innerHTML = `
+  <div class="view">
+    <div class="view-header">
+      <span class="view-title">${t('rule.title')}</span>
+      <button class="btn btn-primary btn-sm" data-action="add-rule">${t('rule.addRule')}</button>
+    </div>
+
+    <div class="section-header">⚡ ${t('rule.alerts')}</div>
+    <div id="rule-alerts">
+      ${triggered.length === 0
+        ? `<div class="text-muted text-sm" style="padding:8px 0;margin-bottom:16px">${t('rule.noAlerts')}</div>`
+        : triggered.map(({rule,stock,actual}) => `
+          <div class="alert-card">
+            <div class="alert-card-title">⚡ ${rule.name} — ${stock.name}</div>
+            <div class="alert-card-body mono">${metricLabels[rule.condition.metric]} ${opLabels[rule.condition.operator]} ${rule.condition.value} &nbsp;|&nbsp; Current: ${actual.toFixed(2)}</div>
+            <div class="alert-card-body mt-8">${rule.message}</div>
+          </div>`).join('')
+      }
+    </div>
+
+    <div class="section-header" style="margin-top:16px">Rules</div>
+    <div id="rules-list">
+      ${db.rules.length === 0 ? `<div class="empty-state">No rules yet.</div>` :
+        db.rules.map(r => {
+          const tgt = r.condition.stockId ? db.stocks.find(s=>s.id===r.condition.stockId)?.name||'?' : 'All Stocks';
+          return `<div class="rule-card">
+            <div class="rule-card-body">
+              <div class="rule-card-name">${r.name}</div>
+              <div class="rule-card-cond">${tgt} · ${metricLabels[r.condition.metric]} ${opLabels[r.condition.operator]} ${r.condition.value}</div>
+              <div class="text-muted text-xs mt-8">${r.message}</div>
+            </div>
+            <label class="switch" title="Active">
+              <input type="checkbox" ${r.active?'checked':''} data-toggle-rule="${r.id}">
+              <span class="switch-track"></span><span class="switch-thumb"></span>
+            </label>
+            <button class="btn btn-ghost btn-sm btn-icon" data-edit-rule="${r.id}">✏</button>
+            <button class="btn btn-ghost btn-sm btn-icon" data-delete-rule="${r.id}">✕</button>
+          </div>`;
+        }).join('')}
+    </div>
+  </div>`;
+
+  app.querySelector('[data-action="add-rule"]').addEventListener('click', () => openRuleModal());
+  app.querySelectorAll('[data-edit-rule]').forEach(b => b.addEventListener('click', () => {
+    const r = db.rules.find(x=>x.id===b.dataset.editRule); if(r) openRuleModal(r);
+  }));
+  app.querySelectorAll('[data-delete-rule]').forEach(b => b.addEventListener('click', () => {
+    if (!confirm('Delete rule?')) return;
+    db.rules = db.rules.filter(r=>r.id!==b.dataset.deleteRule);
+    saveDB(); renderMyrule();
+  }));
+  app.querySelectorAll('[data-toggle-rule]').forEach(inp => inp.addEventListener('change', () => {
+    const r = db.rules.find(x=>x.id===inp.dataset.toggleRule);
+    if(r) { r.active = inp.checked; saveDB(); renderMyrule(); }
+  }));
+}
+
+function openRuleModal(existing = null) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  let selTarget = existing?.condition.stockId ? 'specific' : 'all';
+  overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">${existing ? 'Edit Rule' : t('rule.addRule')}</span>
+        <button class="modal-close btn">✕</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('rule.ruleName')}</label>
+        <input class="form-input" id="rm-name" value="${existing?.name||''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('rule.target')}</label>
+        <div class="toggle-group">
+          <button class="toggle-btn ${selTarget==='all'?'active':''}" data-target="all">${t('rule.allStocks')}</button>
+          <button class="toggle-btn ${selTarget==='specific'?'active':''}" data-target="specific">${t('rule.specificStock')}</button>
+        </div>
+        <select class="form-select mt-8" id="rm-stock" style="${selTarget==='all'?'display:none':''}">
+          ${db.stocks.map(s=>`<option value="${s.id}" ${s.id===existing?.condition.stockId?'selected':''}>${s.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">${t('rule.metric')}</label>
+          <select class="form-select" id="rm-metric">
+            ${Object.entries(metricLabels).map(([k,v])=>`<option value="${k}" ${k===existing?.condition.metric?'selected':''}>${v}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">${t('rule.operator')}</label>
+          <select class="form-select" id="rm-op">
+            ${Object.entries(opLabels).map(([k,v])=>`<option value="${k}" ${k===existing?.condition.operator?'selected':''}>${v}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('rule.value')}</label>
+        <input class="form-input mono" id="rm-val" type="number" value="${existing?.condition.value??''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('rule.alertMsg')}</label>
+        <textarea class="form-textarea" id="rm-msg" rows="2">${existing?.message||''}</textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="rm-cancel">${t('common.cancel')}</button>
+        <button class="btn btn-primary"   id="rm-save">${t('common.save')}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('.modal-close').onclick = () => overlay.remove();
+  overlay.querySelector('#rm-cancel').onclick   = () => overlay.remove();
+  overlay.addEventListener('click', e => { if(e.target===overlay) overlay.remove(); });
+  overlay.querySelectorAll('[data-target]').forEach(b => b.addEventListener('click', () => {
+    selTarget = b.dataset.target;
+    overlay.querySelectorAll('[data-target]').forEach(x=>x.classList.toggle('active',x.dataset.target===selTarget));
+    overlay.querySelector('#rm-stock').style.display = selTarget==='specific'?'block':'none';
+  }));
+  overlay.querySelector('#rm-save').onclick = () => {
+    const name = overlay.querySelector('#rm-name').value.trim();
+    const val  = parseFloat(overlay.querySelector('#rm-val').value);
+    const msg  = overlay.querySelector('#rm-msg').value.trim();
+    if (!name) { toast('Rule name required','error'); return; }
+    if (isNaN(val)) { toast('Value required','error'); return; }
+    const condition = {
+      metric:   overlay.querySelector('#rm-metric').value,
+      operator: overlay.querySelector('#rm-op').value,
+      value: val,
+      stockId: selTarget==='specific' ? overlay.querySelector('#rm-stock').value : null
+    };
+    if (existing) { Object.assign(existing, { name, condition, message:msg }); }
+    else { db.rules.push({ id:uid(), name, active:true, condition, message:msg }); }
+    saveDB(); overlay.remove(); toast('Rule saved!','success'); renderMyrule();
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION 13 — PLAYBOOK
+═══════════════════════════════════════════════════════════ */
+let playbookTab = 'principles';
+
+function renderPlaybook() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+  <div class="view">
+    <div class="view-header"><span class="view-title">${t('playbook.title')}</span></div>
+    <div class="tabs">
+      <button class="tab-btn ${playbookTab==='principles'?'active':''}" data-tab="principles">${t('playbook.principles')}</button>
+      <button class="tab-btn ${playbookTab==='goals'?'active':''}" data-tab="goals">${t('playbook.goals')}</button>
+      <button class="tab-btn ${playbookTab==='watchlist'?'active':''}" data-tab="watchlist">${t('playbook.watchlist')}</button>
+    </div>
+    <div id="pb-content">${renderPlaybookTab()}</div>
+  </div>`;
+  app.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.addEventListener('click', () => {
+    playbookTab = b.dataset.tab;
+    app.querySelectorAll('.tab-btn[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===playbookTab));
+    app.querySelector('#pb-content').innerHTML = renderPlaybookTab();
+    bindPlaybookActions();
+  }));
+  bindPlaybookActions();
+}
+
+function renderPlaybookTab() {
+  if (playbookTab === 'principles') return renderPrinciples();
+  if (playbookTab === 'goals')      return renderGoals();
+  return renderWatchlist();
+}
+
+function renderPrinciples() {
+  const items = db.playbook.principles;
+  return `
+    <div class="flex-row" style="margin-bottom:12px">
+      <button class="btn btn-primary btn-sm" data-action="add-principle">${t('playbook.addPrinciple')}</button>
+    </div>
+    <div id="principles-list">
+      ${items.length===0?`<div class="empty-state">No principles yet.</div>`:
+        items.map((p,i)=>`
+        <div class="principle-item" data-pid="${p.id}">
+          <span class="principle-num">${i+1}.</span>
+          <span class="principle-text">${p.text}</span>
+          <div class="principle-actions">
+            <button class="btn btn-ghost btn-sm btn-icon" data-move-up="${p.id}" ${i===0?'disabled':''}>↑</button>
+            <button class="btn btn-ghost btn-sm btn-icon" data-move-down="${p.id}" ${i===items.length-1?'disabled':''}>↓</button>
+            <button class="btn btn-ghost btn-sm btn-icon" data-edit-p="${p.id}">✏</button>
+            <button class="btn btn-ghost btn-sm btn-icon" data-delete-p="${p.id}">✕</button>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function renderGoals() {
+  const invested = totalInvestedValue();
+  const current  = totalPortfolioValue();
+  const multiple = invested > 0 ? current / invested : 1;
+  return `
+    <div class="flex-row" style="margin-bottom:12px">
+      <button class="btn btn-primary btn-sm" data-action="add-goal">${t('playbook.addGoal')}</button>
+    </div>
+    ${db.playbook.goals.length===0?`<div class="empty-state">No goals yet.</div>`:
+      db.playbook.goals.map(g=>`
+      <div class="card mb-12" data-gid="${g.id}">
+        <div class="flex-row" style="justify-content:space-between;margin-bottom:8px">
+          <span class="fw-600">${g.label}</span>
+          <div class="flex-row">
+            <button class="btn btn-ghost btn-sm btn-icon" data-edit-g="${g.id}">✏</button>
+            <button class="btn btn-ghost btn-sm btn-icon" data-delete-g="${g.id}">✕</button>
+          </div>
+        </div>
+        <div class="mono text-sm" style="margin-bottom:4px">Target: <span class="profit-text">${g.targetMultiple}×</span> by ${formatDate(g.deadline)}</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100,(multiple/g.targetMultiple)*100).toFixed(1)}%;background:${multiple>=g.targetMultiple?'var(--profit)':'var(--accent)'}"></div></div>
+        <div class="flex-row" style="justify-content:space-between;margin-top:4px">
+          <span class="mono text-xs text-muted">Current: ${multiple.toFixed(2)}×</span>
+          <span class="mono text-xs text-muted">${Math.min(100,(multiple/g.targetMultiple)*100).toFixed(1)}%</span>
+        </div>
+        ${g.memo?`<div class="text-muted text-sm mt-8">${g.memo}</div>`:''}
+      </div>`).join('')}`;
+}
+
+function renderWatchlist() {
+  return `
+    <div class="flex-row" style="margin-bottom:12px">
+      <button class="btn btn-primary btn-sm" data-action="add-watch">${t('playbook.addWatch')}</button>
+    </div>
+    ${db.playbook.watchlist.length===0?`<div class="empty-state">${t('playbook.noWatchlist')}</div>`:
+      `<div class="table-wrap"><div class="table-scroll"><table>
+        <thead><tr><th>Name</th><th>Ticker</th><th>Exchange</th><th>Note</th><th></th></tr></thead>
+        <tbody>${db.playbook.watchlist.map(w=>`<tr>
+          <td class="fw-600">${w.name}</td>
+          <td class="mono" style="color:var(--accent)">${w.ticker}</td>
+          <td><span class="badge badge-${w.exchange.toLowerCase()}">${w.exchange}</span></td>
+          <td class="text-muted text-sm">${w.note||''}</td>
+          <td><div class="flex-row">
+            <button class="btn btn-secondary btn-sm" data-move-to-pf="${w.id}">${t('playbook.moveToPortfolio')}</button>
+            <button class="btn btn-ghost btn-sm btn-icon" data-delete-w="${w.id}">✕</button>
+          </div></td>
+        </tr>`).join('')}</tbody>
+      </table></div></div>`}`;
+}
+
+function bindPlaybookActions() {
+  const content = document.getElementById('pb-content');
+  if (!content) return;
+
+  content.querySelector('[data-action="add-principle"]')?.addEventListener('click', () => {
+    const text = prompt('New principle:'); if (!text) return;
+    db.playbook.principles.push({ id:uid(), text }); saveDB();
+    content.innerHTML = renderPrinciples(); bindPlaybookActions();
+  });
+  content.querySelectorAll('[data-move-up]').forEach(b => b.addEventListener('click', () => {
+    const items = db.playbook.principles;
+    const i = items.findIndex(x=>x.id===b.dataset.moveUp);
+    if (i>0) { [items[i-1],items[i]]=[items[i],items[i-1]]; saveDB(); content.innerHTML=renderPrinciples(); bindPlaybookActions(); }
+  }));
+  content.querySelectorAll('[data-move-down]').forEach(b => b.addEventListener('click', () => {
+    const items = db.playbook.principles;
+    const i = items.findIndex(x=>x.id===b.dataset.moveDown);
+    if (i<items.length-1) { [items[i+1],items[i]]=[items[i],items[i+1]]; saveDB(); content.innerHTML=renderPrinciples(); bindPlaybookActions(); }
+  }));
+  content.querySelectorAll('[data-edit-p]').forEach(b => b.addEventListener('click', () => {
+    const p=db.playbook.principles.find(x=>x.id===b.dataset.editP);
+    const t2=prompt('Edit:',p?.text); if(t2&&p){p.text=t2;saveDB();content.innerHTML=renderPrinciples();bindPlaybookActions();}
+  }));
+  content.querySelectorAll('[data-delete-p]').forEach(b => b.addEventListener('click', () => {
+    if(!confirm('Delete?'))return;db.playbook.principles=db.playbook.principles.filter(x=>x.id!==b.dataset.deleteP);saveDB();content.innerHTML=renderPrinciples();bindPlaybookActions();
+  }));
+
+  content.querySelector('[data-action="add-goal"]')?.addEventListener('click', () => openGoalModal());
+  content.querySelectorAll('[data-edit-g]').forEach(b=>b.addEventListener('click',()=>{const g=db.playbook.goals.find(x=>x.id===b.dataset.editG);if(g)openGoalModal(g);}));
+  content.querySelectorAll('[data-delete-g]').forEach(b=>b.addEventListener('click',()=>{if(!confirm('Delete?'))return;db.playbook.goals=db.playbook.goals.filter(x=>x.id!==b.dataset.deleteG);saveDB();content.innerHTML=renderGoals();bindPlaybookActions();}));
+
+  content.querySelector('[data-action="add-watch"]')?.addEventListener('click', () => openWatchModal());
+  content.querySelectorAll('[data-move-to-pf]').forEach(b=>b.addEventListener('click',()=>{
+    const w=db.playbook.watchlist.find(x=>x.id===b.dataset.moveToPf);
+    if(!w)return;
+    db.playbook.watchlist=db.playbook.watchlist.filter(x=>x.id!==w.id);saveDB();
+    navigate('dashboard'); openAddStockModal({ ticker:w.ticker, name:w.name, exchange:w.exchange });
+  }));
+  content.querySelectorAll('[data-delete-w]').forEach(b=>b.addEventListener('click',()=>{if(!confirm('Delete?'))return;db.playbook.watchlist=db.playbook.watchlist.filter(x=>x.id!==b.dataset.deleteW);saveDB();content.innerHTML=renderWatchlist();bindPlaybookActions();}));
+}
+
+function openGoalModal(existing=null) {
+  const overlay=document.createElement('div');overlay.className='modal-overlay';
+  overlay.innerHTML=`<div class="modal">
+    <div class="modal-header"><span class="modal-title">${existing?'Edit Goal':t('playbook.addGoal')}</span><button class="modal-close btn">✕</button></div>
+    <div class="form-group"><label class="form-label">Label</label><input class="form-input" id="gm-label" value="${existing?.label||''}"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Target Multiple (e.g. 2.5)</label><input class="form-input mono" id="gm-mult" type="number" step="0.1" value="${existing?.targetMultiple||''}"></div>
+      <div class="form-group"><label class="form-label">Deadline</label><input class="form-input" id="gm-dl" type="date" value="${existing?.deadline||''}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Memo</label><textarea class="form-textarea" id="gm-memo" rows="2">${existing?.memo||''}</textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="gm-cancel">${t('common.cancel')}</button>
+      <button class="btn btn-primary"   id="gm-save">${t('common.save')}</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('.modal-close').onclick=()=>overlay.remove();
+  overlay.querySelector('#gm-cancel').onclick=()=>overlay.remove();
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
+  overlay.querySelector('#gm-save').onclick=()=>{
+    const label=overlay.querySelector('#gm-label').value.trim();
+    const mult=parseFloat(overlay.querySelector('#gm-mult').value);
+    const dl=overlay.querySelector('#gm-dl').value;
+    const memo=overlay.querySelector('#gm-memo').value;
+    if(!label||isNaN(mult)){toast('Label and multiple required','error');return;}
+    if(existing)Object.assign(existing,{label,targetMultiple:mult,deadline:dl,memo});
+    else db.playbook.goals.push({id:uid(),label,targetMultiple:mult,deadline:dl,memo});
+    saveDB();overlay.remove();toast('Goal saved!','success');
+    const c=document.getElementById('pb-content');if(c){c.innerHTML=renderGoals();bindPlaybookActions();}
+  };
+}
+
+function openWatchModal(existing=null) {
+  const overlay=document.createElement('div');overlay.className='modal-overlay';
+  let selExch=existing?.exchange||'US';
+  overlay.innerHTML=`<div class="modal">
+    <div class="modal-header"><span class="modal-title">${t('playbook.addWatch')}</span><button class="modal-close btn">✕</button></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Name</label><input class="form-input" id="wm-name" value="${existing?.name||''}"></div>
+      <div class="form-group"><label class="form-label">Ticker</label><input class="form-input mono" id="wm-ticker" value="${existing?.ticker||''}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Exchange</label>
+      <div class="toggle-group">
+        <button class="toggle-btn ${selExch==='US'?'active':''}" data-exch="US">🇺🇸 US</button>
+        <button class="toggle-btn ${selExch==='KR'?'active':''}" data-exch="KR">🇰🇷 KR</button>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Note</label><input class="form-input" id="wm-note" value="${existing?.note||''}"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="wm-cancel">${t('common.cancel')}</button>
+      <button class="btn btn-primary"   id="wm-save">${t('common.save')}</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('.modal-close').onclick=()=>overlay.remove();
+  overlay.querySelector('#wm-cancel').onclick=()=>overlay.remove();
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
+  overlay.querySelectorAll('[data-exch]').forEach(b=>b.addEventListener('click',()=>{selExch=b.dataset.exch;overlay.querySelectorAll('[data-exch]').forEach(x=>x.classList.toggle('active',x.dataset.exch===selExch));}));
+  overlay.querySelector('#wm-save').onclick=()=>{
+    const name=overlay.querySelector('#wm-name').value.trim();
+    const ticker=overlay.querySelector('#wm-ticker').value.trim().toUpperCase();
+    const note=overlay.querySelector('#wm-note').value.trim();
+    if(!name||!ticker){toast('Name and ticker required','error');return;}
+    if(existing)Object.assign(existing,{name,ticker,exchange:selExch,note});
+    else db.playbook.watchlist.push({id:uid(),name,ticker,exchange:selExch,note});
+    saveDB();overlay.remove();toast('Watchlist updated!','success');
+    const c=document.getElementById('pb-content');if(c){c.innerHTML=renderWatchlist();bindPlaybookActions();}
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION 14 — MY DB
+═══════════════════════════════════════════════════════════ */
+let mydbTab = 'stocks';
+let mydbPage = { stocks:1, trades:1, news:1 };
+const PAGE_SIZE = 20;
+
+function renderMydb() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+  <div class="view">
+    <div class="view-header">
+      <span class="view-title">${t('mydb.title')}</span>
+      <div class="flex-row">
+        <button class="btn btn-secondary btn-sm" data-action="export-xlsx">${t('mydb.exportXlsx')}</button>
+        <button class="btn btn-secondary btn-sm" data-action="export-json">${t('mydb.exportJson')}</button>
+        <button class="btn btn-secondary btn-sm" data-action="import-json">${t('mydb.importJson')}</button>
+        <input type="file" id="import-file" accept=".json" style="display:none">
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn ${mydbTab==='stocks'?'active':''}" data-tab="stocks">${t('mydb.stocks')} (${db.stocks.length})</button>
+      <button class="tab-btn ${mydbTab==='trades'?'active':''}" data-tab="trades">${t('mydb.trades')} (${db.trades.length})</button>
+      <button class="tab-btn ${mydbTab==='news'?'active':''}" data-tab="news">${t('mydb.news')} (${db.news.length})</button>
+    </div>
+    <div id="mydb-content">${renderMydbTab()}</div>
+  </div>`;
+
+  app.querySelectorAll('.tab-btn[data-tab]').forEach(b=>b.addEventListener('click',()=>{mydbTab=b.dataset.tab;mydbPage[mydbTab]=1;app.querySelectorAll('.tab-btn[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===mydbTab));app.querySelector('#mydb-content').innerHTML=renderMydbTab();bindMydbActions();}));
+  app.querySelector('[data-action="export-xlsx"]').addEventListener('click', exportExcel);
+  app.querySelector('[data-action="export-json"]').addEventListener('click', exportJSON);
+  app.querySelector('[data-action="import-json"]').addEventListener('click', ()=>app.querySelector('#import-file').click());
+  app.querySelector('#import-file').addEventListener('change', e=>{
+    const f=e.target.files[0]; if(!f)return;
+    const r=new FileReader(); r.onload=ev=>{
+      try {
+        const data=JSON.parse(ev.target.result);
+        const choice=confirm('Overwrite all data? (OK=Overwrite, Cancel=Merge)');
+        if(choice){db=data;saveDB();toast('Data overwritten','success');}
+        else{
+          data.stocks?.forEach(s=>{if(!db.stocks.find(x=>x.id===s.id))db.stocks.push(s);});
+          data.trades?.forEach(t=>{if(!db.trades.find(x=>x.id===t.id))db.trades.push(t);});
+          data.news?.forEach(n=>{if(!db.news.find(x=>x.id===n.id))db.news.push(n);});
+          data.rules?.forEach(r=>{if(!db.rules.find(x=>x.id===r.id))db.rules.push(r);});
+          saveDB();toast('Data merged','success');
+        }
+        renderMydb();
+      } catch(err){toast('Invalid JSON file','error');}
+    }; r.readAsText(f);
+  });
+  bindMydbActions();
+}
+
+function renderMydbTab() {
+  if (mydbTab === 'stocks') return renderMydbStocks();
+  if (mydbTab === 'trades') return renderMydbTrades();
+  return renderMydbNews();
+}
+
+function renderMydbStocks() {
+  const items = db.stocks;
+  const total = items.length;
+  const page = mydbPage.stocks;
+  const slice = items.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE);
+  return `<div class="table-wrap"><div class="table-scroll"><table>
+    <thead><tr><th>Name</th><th>Ticker</th><th>Exch</th><th>Account</th><th>Category</th><th>Holdings</th><th>Avg Price</th><th>Cur Price</th><th></th></tr></thead>
+    <tbody>${slice.map(s=>`<tr>
+      <td>${s.name}</td>
+      <td class="mono" style="color:var(--accent)">${s.ticker}</td>
+      <td><span class="badge badge-${s.exchange.toLowerCase()}">${s.exchange}</span></td>
+      <td>${s.account}</td><td>${s.category}</td>
+      <td class="td-num mono">${s.holdings}</td>
+      <td class="td-num mono">${s.currency==='KRW'?'₩':'$'}${formatNum(s.avgPrice,2)}</td>
+      <td class="td-num mono">${s.currentPrice!=null?formatPrice(s.currentPrice,s.currency):'--'}</td>
+      <td><button class="btn btn-ghost btn-sm btn-icon" data-delete-stock="${s.id}">✕</button></td>
+    </tr>`).join('')}</tbody>
+  </table></div>
+  ${renderPagination(total, page, 'stocks')}</div>`;
+}
+
+function renderMydbTrades() {
+  const items = db.trades.slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const total = items.length;
+  const page = mydbPage.trades;
+  const slice = items.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE);
+  return `<div class="table-wrap"><div class="table-scroll"><table>
+    <thead><tr><th>Date</th><th>Stock</th><th>Type</th><th>Qty</th><th>Price</th><th>Total</th><th>Memo</th><th></th></tr></thead>
+    <tbody>${slice.map(tr=>{
+      const s=db.stocks.find(x=>x.id===tr.stockId);
+      return `<tr>
+        <td class="mono text-sm">${formatDate(tr.date)}</td>
+        <td>${s?.name||'?'} <span class="mono text-xs" style="color:var(--accent)">${s?.ticker||''}</span></td>
+        <td><span class="badge badge-${tr.type}">${tr.type.toUpperCase()}</span></td>
+        <td class="td-num mono">${formatNum(tr.quantity,4)}</td>
+        <td class="td-num mono">${s?.currency==='KRW'?'₩':'$'}${formatNum(tr.price,2)}</td>
+        <td class="td-num mono fw-600">${s?.currency==='KRW'?'₩':'$'}${formatNum(tr.quantity*tr.price,2)}</td>
+        <td class="text-muted text-sm">${tr.memo||''}</td>
+        <td><button class="btn btn-ghost btn-sm btn-icon" data-delete-trade-db="${tr.id}">✕</button></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>
+  ${renderPagination(total, page, 'trades')}</div>`;
+}
+
+function renderMydbNews() {
+  const items = db.news.slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const total = items.length;
+  const page = mydbPage.news;
+  const slice = items.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE);
+  return `<div class="table-wrap"><div class="table-scroll"><table>
+    <thead><tr><th>Date</th><th>Source</th><th>Summary</th><th>Related</th><th></th></tr></thead>
+    <tbody>${slice.map(n=>`<tr>
+      <td class="mono text-sm">${formatDate(n.date)}</td>
+      <td>${n.url?`<a href="${n.url}" target="_blank">${n.source}</a>`:n.source}</td>
+      <td class="text-sm" style="max-width:300px;white-space:normal">${n.summary.slice(0,80)}${n.summary.length>80?'…':''}</td>
+      <td class="text-sm">${n.relatedStockIds.map(id=>db.stocks.find(s=>s.id===id)?.ticker||'').filter(Boolean).join(', ')}</td>
+      <td><button class="btn btn-ghost btn-sm btn-icon" data-delete-news-db="${n.id}">✕</button></td>
+    </tr>`).join('')}</tbody>
+  </table></div>
+  ${renderPagination(total, page, 'news')}</div>`;
+}
+
+function renderPagination(total, page, tab) {
+  const pages = Math.ceil(total/PAGE_SIZE);
+  if (pages <= 1) return '';
+  return `<div class="pagination">
+    <button class="page-btn" data-page="${page-1}" data-ptab="${tab}" ${page<=1?'disabled':''}>← Prev</button>
+    <span>Page ${page} / ${pages}</span>
+    <button class="page-btn" data-page="${page+1}" data-ptab="${tab}" ${page>=pages?'disabled':''}>Next →</button>
+  </div>`;
+}
+
+function bindMydbActions() {
+  const content = document.getElementById('mydb-content');
+  if (!content) return;
+  content.querySelectorAll('[data-delete-stock]').forEach(b=>b.addEventListener('click',()=>{if(!confirm('Delete stock and all its trades?'))return;const id=b.dataset.deleteStock;db.stocks=db.stocks.filter(x=>x.id!==id);db.trades=db.trades.filter(x=>x.stockId!==id);saveDB();document.getElementById('mydb-content').innerHTML=renderMydbTab();bindMydbActions();}));
+  content.querySelectorAll('[data-delete-trade-db]').forEach(b=>b.addEventListener('click',()=>{if(!confirm('Delete trade?'))return;const t=db.trades.find(x=>x.id===b.dataset.deleteTradeDb);db.trades=db.trades.filter(x=>x.id!==b.dataset.deleteTradeDb);if(t)recalcStock(t.stockId);saveDB();document.getElementById('mydb-content').innerHTML=renderMydbTab();bindMydbActions();}));
+  content.querySelectorAll('[data-delete-news-db]').forEach(b=>b.addEventListener('click',()=>{if(!confirm('Delete?'))return;db.news=db.news.filter(x=>x.id!==b.dataset.deleteNewsDb);saveDB();document.getElementById('mydb-content').innerHTML=renderMydbTab();bindMydbActions();}));
+  content.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>{mydbPage[b.dataset.ptab]=parseInt(b.dataset.page);document.getElementById('mydb-content').innerHTML=renderMydbTab();bindMydbActions();}));
+}
+
+function exportExcel() {
+  const wb = XLSX.utils.book_new();
+  const total = totalPortfolioValue();
+  const stockRows = db.stocks.map(s=>{const c=calcStock(s);const alloc=c.currentValue!=null?toKRW(c.currentValue,s.currency)/total*100:null;return{Name:s.name,Ticker:s.ticker,Exchange:s.exchange,Currency:s.currency,Holdings:s.holdings,'Avg Price':s.avgPrice,'Current Price':s.currentPrice||'','Current Value (KRW)':c.currentValue!=null?Math.round(toKRW(c.currentValue,s.currency)):'',"P&L Amount":c.profitAmount!=null?parseFloat(c.profitAmount.toFixed(2)):'',"P&L %":c.profitRate!=null?c.profitRate.toFixed(2)+'%':'','Alloc %':alloc!=null?alloc.toFixed(1)+'%':'',Category:s.category,Account:s.account};});
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(stockRows), 'Stocks');
+  const tradeRows=db.trades.map(tr=>{const s=db.stocks.find(x=>x.id===tr.stockId);return{Date:tr.date,'Stock Name':s?.name||'',Ticker:s?.ticker||'',Type:tr.type,Quantity:tr.quantity,Price:tr.price,Total:tr.quantity*tr.price,Memo:tr.memo||''};});
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(tradeRows.length?tradeRows:[{note:'No trades'}]), 'Trades');
+  const newsRows=db.news.map(n=>({Date:n.date,Source:n.source,URL:n.url,Summary:n.summary,'Related Stocks':n.relatedStockIds.map(id=>db.stocks.find(s=>s.id===id)?.name||'').filter(Boolean).join(', ')}));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(newsRows.length?newsRows:[{note:'No news'}]), 'News');
+  const ruleRows=db.rules.map(r=>({Name:r.name,Active:r.active,Metric:r.condition.metric,Operator:r.condition.operator,Value:r.condition.value,'Target Stock':r.condition.stockId?db.stocks.find(s=>s.id===r.condition.stockId)?.name||'?':'All',Message:r.message}));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ruleRows.length?ruleRows:[{note:'No rules'}]), 'Rules');
+  XLSX.writeFile(wb, 'stockmanager_backup.xlsx');
+  toast('Excel exported!', 'success');
+}
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(db, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'stockmanager_backup.json'; a.click();
+  toast('JSON exported!', 'success');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION 15 — SETTINGS
+═══════════════════════════════════════════════════════════ */
+function renderSettings() {
+  const s = db.settings;
+  const app = document.getElementById('app');
+  app.innerHTML = `
+  <div class="view">
+    <div class="view-header"><span class="view-title">${t('settings.title')}</span></div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">${t('settings.display')}</div>
+      <div class="settings-row">
+        <div><div class="settings-row-label">${t('settings.theme')}</div></div>
+        <div class="toggle-group" style="width:160px">
+          <button class="toggle-btn ${s.theme==='light'?'active':''}" data-theme="light">${t('settings.light')}</button>
+          <button class="toggle-btn ${s.theme==='dark'?'active':''}"  data-theme="dark">${t('settings.dark')}</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-row-label">${t('settings.language')}</div></div>
+        <div class="toggle-group" style="width:120px">
+          <button class="toggle-btn ${s.language==='en'?'active':''}" data-lang="en">EN</button>
+          <button class="toggle-btn ${s.language==='ko'?'active':''}" data-lang="ko">KO</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-row-label">${t('settings.currency')}</div><div class="settings-row-sub">USD stocks display</div></div>
+        <div class="toggle-group" style="width:160px">
+          <button class="toggle-btn ${s.currency==='USD'?'active':''}" data-curr="USD">USD</button>
+          <button class="toggle-btn ${s.currency==='KRW'?'active':''}" data-curr="KRW">KRW (₩)</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">${t('settings.accounts')}</div>
+      <div class="flex-row flex-wrap gap-4 mb-12">
+        ${PRESET_ACCOUNTS.map(a=>`<span class="tag-pill" style="opacity:0.5;cursor:default">${a}</span>`).join('')}
+        ${s.customAccounts.map(a=>`<span class="tag-pill" style="background:var(--surface2);color:var(--text)">${a} <button data-del-acc="${a}" style="margin-left:4px;background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px">✕</button></span>`).join('')}
+      </div>
+      <div class="flex-row">
+        <input class="form-input" id="new-account" placeholder="New account name" style="max-width:200px">
+        <button class="btn btn-secondary btn-sm" data-action="add-account">${t('settings.addCustom')}</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">${t('settings.categories')}</div>
+      <div class="flex-row flex-wrap gap-4 mb-12">
+        ${PRESET_CATEGORIES.map(c=>`<span class="tag-pill" style="opacity:0.5;cursor:default">${c}</span>`).join('')}
+        ${s.customCategories.map(c=>`<span class="tag-pill" style="background:var(--surface2);color:var(--text)">${c} <button data-del-cat="${c}" style="margin-left:4px;background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px">✕</button></span>`).join('')}
+      </div>
+      <div class="flex-row">
+        <input class="form-input" id="new-category" placeholder="New category name" style="max-width:200px">
+        <button class="btn btn-secondary btn-sm" data-action="add-category">${t('settings.addCustom')}</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">${t('settings.data')}</div>
+      <div class="flex-row flex-wrap gap-4">
+        <button class="btn btn-secondary" data-action="exp-json">${t('settings.exportJson')}</button>
+        <button class="btn btn-secondary" data-action="imp-json">${t('settings.importJson')}</button>
+        <button class="btn btn-danger"    data-action="reset">${t('settings.reset')}</button>
+        <input type="file" id="set-import-file" accept=".json" style="display:none">
+      </div>
+    </div>
+  </div>`;
+
+  app.querySelectorAll('[data-theme]').forEach(b=>b.addEventListener('click',()=>{db.settings.theme=b.dataset.theme;document.body.setAttribute('data-theme',b.dataset.theme);saveDB();renderSettings();}));
+  app.querySelectorAll('[data-lang]').forEach(b=>b.addEventListener('click',()=>{db.settings.language=b.dataset.lang;saveDB();renderSettings();}));
+  app.querySelectorAll('[data-curr]').forEach(b=>b.addEventListener('click',()=>{db.settings.currency=b.dataset.curr;saveDB();renderSettings();}));
+  app.querySelector('[data-action="add-account"]').addEventListener('click',()=>{const v=app.querySelector('#new-account').value.trim();if(!v)return;if(!db.settings.customAccounts.includes(v))db.settings.customAccounts.push(v);saveDB();renderSettings();});
+  app.querySelector('[data-action="add-category"]').addEventListener('click',()=>{const v=app.querySelector('#new-category').value.trim();if(!v)return;if(!db.settings.customCategories.includes(v))db.settings.customCategories.push(v);saveDB();renderSettings();});
+  app.querySelectorAll('[data-del-acc]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();db.settings.customAccounts=db.settings.customAccounts.filter(x=>x!==b.dataset.delAcc);saveDB();renderSettings();}));
+  app.querySelectorAll('[data-del-cat]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();db.settings.customCategories=db.settings.customCategories.filter(x=>x!==b.dataset.delCat);saveDB();renderSettings();}));
+  app.querySelector('[data-action="exp-json"]').addEventListener('click',exportJSON);
+  app.querySelector('[data-action="imp-json"]').addEventListener('click',()=>app.querySelector('#set-import-file').click());
+  app.querySelector('#set-import-file').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const data=JSON.parse(ev.target.result);if(confirm('Overwrite all data?')){db=data;saveDB();document.body.setAttribute('data-theme',db.settings.theme||'light');toast('Data overwritten','success');renderSettings();}else{toast('Import cancelled','info');}}catch(err){toast('Invalid JSON','error');}};r.readAsText(f);});
+  app.querySelector('[data-action="reset"]').addEventListener('click',()=>{if(confirm(t('settings.resetConfirm'))){db=deepClone(DEFAULT_DB);seedIfEmpty();saveDB();document.body.setAttribute('data-theme','light');toast('Data reset','success');navigate('dashboard');}});
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION 16 — STOCK DETAIL MODAL
+═══════════════════════════════════════════════════════════ */
+let detailTab = 'overview';
+let detailChartInstance = null;
+
+function openStockDetail(stockId) {
+  const stock = db.stocks.find(s=>s.id===stockId);
+  if (!stock) return;
+  detailTab = 'overview';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal modal-lg" id="detail-modal">
+      <div class="modal-header">
+        <div>
+          <span class="modal-title">${stock.name}</span>
+          <span class="mono text-sm" style="color:var(--accent);margin-left:8px">${stock.ticker}</span>
+          <span class="badge badge-${stock.exchange.toLowerCase()}" style="margin-left:8px">${stock.exchange}</span>
+        </div>
+        <button class="modal-close btn">✕</button>
+      </div>
+      <div class="modal-tabs">
+        <button class="modal-tab ${detailTab==='overview'?'active':''}" data-dtab="overview">Overview</button>
+        <button class="modal-tab ${detailTab==='trades'?'active':''}"   data-dtab="trades">Trade History</button>
+        <button class="modal-tab ${detailTab==='news'?'active':''}"     data-dtab="news">News</button>
+        <button class="modal-tab ${detailTab==='chart'?'active':''}"    data-dtab="chart">30-Day Chart</button>
+      </div>
+      <div id="detail-content">${renderDetailTab(stock)}</div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('.modal-close').onclick = () => { if(detailChartInstance){detailChartInstance.destroy();detailChartInstance=null;} overlay.remove(); };
+  overlay.addEventListener('click', e => { if(e.target===overlay){if(detailChartInstance){detailChartInstance.destroy();detailChartInstance=null;}overlay.remove();} });
+
+  overlay.querySelectorAll('[data-dtab]').forEach(b=>b.addEventListener('click',()=>{
+    if(detailChartInstance){detailChartInstance.destroy();detailChartInstance=null;}
+    detailTab=b.dataset.dtab;
+    overlay.querySelectorAll('[data-dtab]').forEach(x=>x.classList.toggle('active',x.dataset.dtab===detailTab));
+    overlay.querySelector('#detail-content').innerHTML=renderDetailTab(stock);
+    if(detailTab==='trades')bindDetailTradeActions(overlay,stock);
+    if(detailTab==='news')bindDetailNewsActions(overlay,stock);
+    if(detailTab==='chart')loadDetailChart(stock);
+  }));
+
+  bindDetailTradeActions(overlay, stock);
+}
+
+function renderDetailTab(stock) {
+  if (detailTab==='overview') return renderDetailOverview(stock);
+  if (detailTab==='trades')   return renderDetailTrades(stock);
+  if (detailTab==='news')     return renderDetailNews(stock);
+  return `<div style="text-align:center;padding:20px"><div class="shimmer" style="height:200px;border-radius:8px;display:block">Loading chart...</div></div>`;
+}
+
+function renderDetailOverview(stock) {
+  const c = calcStock(stock);
+  const total = totalPortfolioValue();
+  const alloc = (c.currentValue!=null&&total>0) ? toKRW(c.currentValue,stock.currency)/total*100 : null;
+  const fields = [
+    ['Account', stock.account], ['Category', stock.category],
+    ['Holdings', formatNum(stock.holdings, stock.holdings%1===0?0:4) + ' shares'],
+    ['Avg Price', stock.currency==='KRW'?'₩'+formatNum(stock.avgPrice,0):'$'+formatNum(stock.avgPrice,2)],
+    ['Current Price', stock.currentPrice!=null?formatPrice(stock.currentPrice,stock.currency):'--'],
+    ['Current Value', c.currentValue!=null?formatKRW(toKRW(c.currentValue,stock.currency)):'--'],
+    ['P&L Amount', c.profitAmount!=null?`<span class="${plClass(c.profitAmount)}">${c.profitAmount>=0?'+':''}${stock.currency==='KRW'?'₩'+formatNum(c.profitAmount,0):'$'+formatNum(c.profitAmount,2)}</span>`:'--'],
+    ['P&L %', c.profitRate!=null?`<span class="${plClass(c.profitRate)}">${formatPct(c.profitRate)}</span>`:'--'],
+    ['Allocation', alloc!=null?formatNum(alloc,1)+'%':'--'],
+    ['Exchange', stock.exchange], ['Currency', stock.currency],
+  ];
+  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+    ${fields.map(([k,v])=>`<div class="card" style="padding:12px"><div class="card-title">${k}</div><div class="mono">${v}</div></div>`).join('')}
+  </div>
+  <div class="card" style="padding:12px"><div class="card-title">Memo</div><p class="text-sm">${stock.memo||'—'}</p></div>
+  <div class="modal-footer" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+    <button class="btn btn-primary btn-sm" id="detail-trade-btn">Record Trade</button>
+  </div>`;
+}
+
+function renderDetailTrades(stock) {
+  const trades = db.trades.filter(t=>t.stockId===stock.id).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if (!trades.length) return `<div class="empty-state">No trades for ${stock.name} yet.</div>`;
+  return `<div class="table-wrap"><table>
+    <thead><tr><th>Date</th><th>Type</th><th>Qty</th><th>Price</th><th>Total</th><th>Memo</th><th></th></tr></thead>
+    <tbody>${trades.map(tr=>`<tr>
+      <td class="mono text-sm">${formatDate(tr.date)}</td>
+      <td><span class="badge badge-${tr.type}">${tr.type.toUpperCase()}</span></td>
+      <td class="td-num mono">${formatNum(tr.quantity,4)}</td>
+      <td class="td-num mono">${stock.currency==='KRW'?'₩':'$'}${formatNum(tr.price,2)}</td>
+      <td class="td-num mono fw-600">${stock.currency==='KRW'?'₩':'$'}${formatNum(tr.quantity*tr.price,2)}</td>
+      <td class="text-muted text-sm">${tr.memo||''}</td>
+      <td><button class="btn btn-ghost btn-sm btn-icon" data-del-detail-trade="${tr.id}">✕</button></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+function renderDetailNews(stock) {
+  const items = db.news.filter(n=>n.relatedStockIds.includes(stock.id)).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if (!items.length) return `<div class="empty-state">No news linked to ${stock.name}.</div>`;
+  return items.map(n=>`<div class="card mb-12">
+    <div class="flex-row" style="justify-content:space-between;margin-bottom:6px">
+      <span class="mono text-sm text-muted">${formatDate(n.date)}</span>
+      ${n.url?`<a href="${n.url}" target="_blank" class="fw-600 text-sm">${n.source}</a>`:`<span class="fw-600 text-sm">${n.source}</span>`}
+    </div>
+    <p class="text-sm" style="line-height:1.5">${n.summary}</p>
+  </div>`).join('');
+}
+
+function bindDetailTradeActions(overlay, stock) {
+  overlay.querySelector('#detail-trade-btn')?.addEventListener('click', () => { overlay.remove(); openTradeModal(stock.id); });
+  overlay.querySelectorAll('[data-del-detail-trade]').forEach(b=>b.addEventListener('click',()=>{
+    if(!confirm('Delete?'))return;
+    const tr=db.trades.find(x=>x.id===b.dataset.delDetailTrade);
+    db.trades=db.trades.filter(x=>x.id!==b.dataset.delDetailTrade);
+    if(tr)recalcStock(tr.stockId);
+    saveDB();
+    overlay.querySelector('#detail-content').innerHTML=renderDetailTrades(stock);
+    bindDetailTradeActions(overlay,stock);
+  }));
+}
+function bindDetailNewsActions(overlay, stock) {/* news in modal is read-only view */}
+
+async function loadDetailChart(stock) {
+  const wrap = document.querySelector('#detail-content');
+  if (!wrap) return;
+  wrap.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">Loading chart data...</div>`;
+  try {
+    const data = await fetch30DayChart(stock);
+    wrap.innerHTML = `<div style="height:280px;position:relative"><canvas id="detail-chart-canvas"></canvas></div>`;
+    const isDark = db.settings.theme === 'dark';
+    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    const textColor = isDark ? '#94A3B8' : '#64748B';
+    const labels = data.timestamps.map(ts => new Date(ts*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'}));
+    const ctx = document.getElementById('detail-chart-canvas');
+    detailChartInstance = new Chart(ctx, {
+      type:'line',
+      data:{ labels, datasets:[{ data:data.closes, borderColor:'#3B82F6', backgroundColor:'rgba(59,130,246,0.08)', fill:true, tension:0.3, pointRadius:2, borderWidth:2 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{grid:{color:gridColor},ticks:{color:textColor,maxTicksLimit:8,font:{size:10}}}, y:{grid:{color:gridColor},ticks:{color:textColor}} } }
+    });
+  } catch(e) {
+    if(wrap) wrap.innerHTML = `<div class="card" style="text-align:center;padding:40px;color:var(--muted)">Chart data unavailable for ${stock.ticker}.</div>`;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION 17 — INIT
+═══════════════════════════════════════════════════════════ */
+loadDB();
+seedIfEmpty();
+document.body.setAttribute('data-theme', db.settings.theme || 'light');
+
+const savedView = loadView();
+navigate(savedView || 'home');
+
+// Auto-refresh prices if stale
+const needsRefresh = db.stocks.some(s => !s.priceUpdatedAt || (Date.now()-new Date(s.priceUpdatedAt))>15*60*1000);
+if (needsRefresh) refreshAllPrices();
+</script>
+</body>
+</html>
