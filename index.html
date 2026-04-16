@@ -836,27 +836,77 @@ function seedIfEmpty() {
 const i18n = {
   en: {
     nav: { dashboard:'Dashboard', graphs:'Graphs', tradelog:'Trade Log', news:'News', myrule:'My Rule', playbook:'Playbook', mydb:'My DB', settings:'Settings' },
-    dashboard: { title:'Dashboard', addStock:'+ Add Stock', refreshPrices:'↻ Refresh Prices', totalValue:'Total Value', totalPL:'Total P&L', numHoldings:'Holdings', usdkrw:'USD / KRW' },
+    dashboard: { title:'Dashboard', addStock:'+ Add Stock', refreshPrices:'↻ Refresh Prices', totalValue:'Total Value', totalPL:'Total P&L', numHoldings:'Holdings', usdkrw:'USD / KRW',
+      allAccounts:'All Accounts', allCategories:'All Categories', allMarkets:'All Markets', usOnly:'US Only', krOnly:'KR Only', loading:'↻ Loading...' },
     cols: { name:'Name', ticker:'Ticker', account:'Account', category:'Category', shares:'Shares', avgPrice:'Avg Price', curPrice:'Cur Price', pl:'P&L', plPct:'P&L %', alloc:'Alloc %' },
-    trade: { title:'Trade Log', recordTrade:'+ Record Trade', date:'Date', stock:'Stock', type:'Type', qty:'Qty', price:'Price/Share', total:'Total', memo:'Memo', buy:'Buy', sell:'Sell', noTrades:'No trades recorded yet.' },
-    news: { title:'News', addNews:'+ Add News', source:'Source', url:'URL', summary:'Summary', relatedStocks:'Related Stocks', noNews:'No news scraps yet.' },
-    rule: { title:'My Rule', addRule:'+ Add Rule', alerts:'Active Alerts', noAlerts:'No rules triggered', ruleName:'Rule Name', target:'Target', allStocks:'All Stocks', specificStock:'Specific Stock', metric:'Metric', operator:'Operator', value:'Value', alertMsg:'Alert Message', active:'Active' },
-    playbook: { title:'Playbook', principles:'Principles', goals:'Goals', watchlist:'Watchlist', addPrinciple:'+ Add Principle', addGoal:'+ Add Goal', addWatch:'+ Add to Watchlist', moveToPortfolio:'Move to Portfolio', noWatchlist:'Watchlist is empty.' },
-    mydb: { title:'My DB', exportXlsx:'Export Excel', exportJson:'Export JSON', importJson:'Import JSON', stocks:'Stocks', trades:'Trades', news:'News' },
-    settings: { title:'Settings', display:'Display', theme:'Theme', light:'Light', dark:'Dark', language:'Language', currency:'Currency for USD stocks', accounts:'Accounts', categories:'Categories', data:'Data', exportJson:'Export JSON', importJson:'Import JSON', reset:'Reset All Data', resetConfirm:'Delete ALL data? This cannot be undone.', usd:'USD', krw:'KRW (₩)', addCustom:'+ Add', save:'Save', cancel:'Cancel', close:'Close' },
-    common: { edit:'Edit', delete:'Delete', confirm:'Confirm', close:'Close', buy:'Buy', sell:'Sell', memo:'Memo', date:'Date', add:'Add', save:'Save', cancel:'Cancel', name:'Name', search:'Search...', na:'--' }
+    trade: { title:'Trade Log', recordTrade:'+ Record Trade', date:'Date', stock:'Stock', type:'Type', qty:'Qty', price:'Price/Share', total:'Total', memo:'Memo', buy:'Buy', sell:'Sell',
+      noTrades:'No trades recorded yet.', allStocks:'All Stocks', allTypes:'All', deleteConfirm:'Delete this trade?' },
+    news: { title:'News', addNews:'+ Add News', source:'Source', url:'URL', summary:'Summary', relatedStocks:'Related Stocks', noNews:'No news scraps yet.',
+      editNews:'Edit News', addNewsTitle:'Add News', deleteConfirm:'Delete this news item?', searching:'Searching...' },
+    rule: { title:'My Rule', addRule:'+ Add Rule', alerts:'Active Alerts', noAlerts:'No rules triggered', ruleName:'Rule Name', target:'Target', allStocks:'All Stocks',
+      specificStock:'Specific Stock', metric:'Metric', operator:'Operator', value:'Value', alertMsg:'Alert Message', active:'Active', noRules:'No rules yet.',
+      metricProfitRate:'Profit Rate %', metricLossRate:'Loss Rate %', metricAllocation:'Allocation %', metricTargetPrice:'Target Price',
+      opGt:'>', opLt:'<', opGte:'≥', opLte:'≤', deleteConfirm:'Delete rule?', editRule:'Edit Rule',
+      condSummary:'Current', nameRequired:'Rule name required', valueRequired:'Value required' },
+    playbook: { title:'Playbook', principles:'Principles', goals:'Goals', watchlist:'Watchlist', addPrinciple:'+ Add Principle', addGoal:'+ Add Goal', addWatch:'+ Add to Watchlist',
+      moveToPortfolio:'Move to Portfolio', noWatchlist:'Watchlist is empty.', noPrinciples:'No principles yet.', noGoals:'No goals yet.',
+      newPrinciple:'New principle:', editPrinciple:'Edit:', goalLabel:'Label', goalMultiple:'Target Multiple (e.g. 2.5)', goalDeadline:'Deadline', goalMemo:'Memo',
+      watchName:'Name', watchTicker:'Ticker', watchNote:'Note', deleteConfirm:'Delete?', targetProgress:'Target', currentProgress:'Current', progressPct:'Progress' },
+    mydb: { title:'My DB', exportXlsx:'Export Excel', exportJson:'Export JSON', importJson:'Import JSON', stocks:'Stocks', trades:'Trades', news:'News',
+      deleteStock:'Delete stock and all its trades?', deleteTrade:'Delete trade?', deleteNews:'Delete?', overwriteConfirm:'Overwrite all data?' },
+    graphs: { title:'Graphs', allocByStock:'Allocation by Stock', allocByCat:'Allocation by Category', allocByAcc:'Allocation by Account',
+      prByStock:'Profit Rate by Stock', prByCat:'Profit Rate by Category', cumulPnl:'Cumulative P&L', monthlyReturn:'Monthly Return (Last 6M)',
+      noData:'No price data available', tooltipAlloc:'Allocation', tooltipValue:'Value', tooltipPnl:'P&L' },
+    settings: { title:'Settings', display:'Display', theme:'Theme', light:'Light', dark:'Dark', language:'Language', currency:'Currency for USD stocks',
+      accounts:'Accounts', categories:'Categories', data:'Data', exportJson:'Export JSON', importJson:'Import JSON', reset:'Reset All Data',
+      resetConfirm:'Delete ALL data? This cannot be undone.', usd:'USD', krw:'KRW (₩)', addCustom:'+ Add', save:'Save', cancel:'Cancel', close:'Close' },
+    common: { edit:'Edit', delete:'Delete', confirm:'Confirm', close:'Close', buy:'Buy', sell:'Sell', memo:'Memo', date:'Date', add:'Add', save:'Save', cancel:'Cancel',
+      name:'Name', search:'Search ticker or company name', na:'--', selectStock:'-- Select --', initialPosition:'Initial position',
+      insufficientHoldings:'Insufficient holdings', invalidQty:'Invalid quantity', invalidPrice:'Invalid price', selectStockError:'Select a stock',
+      selectDateError:'Select a date', nameTickerRequired:'Name and ticker required', sourceRequired:'Source and summary required',
+      searchPlaceholder:'e.g. NVDA, Apple, Samsung', noResults:'No results found', searchFailed:'Search failed. Try entering ticker manually.',
+      exchange:'Exchange', nameRequired:'Name and ticker required',
+      tradeRecorded:'Trade recorded!', newsSaved:'News saved!', ruleSaved:'Rule saved!',
+      dataOverwritten:'Data overwritten', dataMerged:'Data merged', dataReset:'Data reset',
+      importCancelled:'Import cancelled', excelExported:'Excel exported!', jsonExported:'JSON exported!',
+      stockAdded:'added!' }
   },
   ko: {
     nav: { dashboard:'대시보드', graphs:'그래프', tradelog:'매매일지', news:'뉴스', myrule:'내규칙', playbook:'플레이북', mydb:'내DB', settings:'설정' },
-    dashboard: { title:'대시보드', addStock:'+ 종목추가', refreshPrices:'↻ 가격갱신', totalValue:'총 평가금액', totalPL:'총 손익', numHoldings:'보유종목', usdkrw:'달러환율' },
+    dashboard: { title:'대시보드', addStock:'+ 종목추가', refreshPrices:'↻ 가격갱신', totalValue:'총 평가금액', totalPL:'총 손익', numHoldings:'보유종목', usdkrw:'달러환율',
+      allAccounts:'전체 계좌', allCategories:'전체 카테고리', allMarkets:'전체 시장', usOnly:'미국장', krOnly:'한국장', loading:'↻ 불러오는 중...' },
     cols: { name:'종목명', ticker:'티커', account:'계좌', category:'카테고리', shares:'보유량', avgPrice:'평단가', curPrice:'현재가', pl:'수익금', plPct:'수익률%', alloc:'비중%' },
-    trade: { title:'매매일지', recordTrade:'+ 매매기록', date:'날짜', stock:'종목', type:'구분', qty:'수량', price:'주당가격', total:'합계', memo:'메모', buy:'매수', sell:'매도', noTrades:'매매 기록이 없습니다.' },
-    news: { title:'뉴스스크랩', addNews:'+ 뉴스추가', source:'출처', url:'링크', summary:'내용요약', relatedStocks:'연관종목', noNews:'스크랩된 뉴스가 없습니다.' },
-    rule: { title:'내 규칙', addRule:'+ 규칙추가', alerts:'활성 알림', noAlerts:'발동된 규칙 없음', ruleName:'규칙명', target:'적용대상', allStocks:'전체종목', specificStock:'특정종목', metric:'기준', operator:'조건', value:'값', alertMsg:'알림문구', active:'활성' },
-    playbook: { title:'플레이북', principles:'투자원칙', goals:'목표', watchlist:'관심종목', addPrinciple:'+ 원칙추가', addGoal:'+ 목표추가', addWatch:'+ 관심종목추가', moveToPortfolio:'포트폴리오에 추가', noWatchlist:'관심종목이 없습니다.' },
-    mydb: { title:'내 데이터베이스', exportXlsx:'엑셀 내보내기', exportJson:'JSON 내보내기', importJson:'JSON 가져오기', stocks:'종목', trades:'매매', news:'뉴스' },
-    settings: { title:'설정', display:'화면', theme:'테마', light:'라이트', dark:'다크', language:'언어', currency:'달러종목 표시 통화', accounts:'계좌', categories:'카테고리', data:'데이터', exportJson:'JSON 내보내기', importJson:'JSON 가져오기', reset:'전체 초기화', resetConfirm:'모든 데이터가 삭제됩니다. 되돌릴 수 없습니다.', usd:'달러(USD)', krw:'원화(₩)', addCustom:'+ 추가', save:'저장', cancel:'취소', close:'닫기' },
-    common: { edit:'수정', delete:'삭제', confirm:'확인', close:'닫기', buy:'매수', sell:'매도', memo:'메모', date:'날짜', add:'추가', save:'저장', cancel:'취소', name:'이름', search:'검색...', na:'--' }
+    trade: { title:'매매일지', recordTrade:'+ 매매기록', date:'날짜', stock:'종목', type:'구분', qty:'수량', price:'주당가격', total:'합계', memo:'메모', buy:'매수', sell:'매도',
+      noTrades:'매매 기록이 없습니다.', allStocks:'전체 종목', allTypes:'전체', deleteConfirm:'이 매매 기록을 삭제할까요?' },
+    news: { title:'뉴스스크랩', addNews:'+ 뉴스추가', source:'출처', url:'링크', summary:'내용요약', relatedStocks:'연관종목', noNews:'스크랩된 뉴스가 없습니다.',
+      editNews:'뉴스 수정', addNewsTitle:'뉴스 추가', deleteConfirm:'이 뉴스를 삭제할까요?', searching:'검색 중...' },
+    rule: { title:'내 규칙', addRule:'+ 규칙추가', alerts:'활성 알림', noAlerts:'발동된 규칙 없음', ruleName:'규칙명', target:'적용대상', allStocks:'전체종목',
+      specificStock:'특정종목', metric:'기준', operator:'조건', value:'값', alertMsg:'알림문구', active:'활성', noRules:'규칙이 없습니다.',
+      metricProfitRate:'수익률 %', metricLossRate:'손실률 %', metricAllocation:'비중 %', metricTargetPrice:'목표가',
+      opGt:'>', opLt:'<', opGte:'≥', opLte:'≤', deleteConfirm:'이 규칙을 삭제할까요?', editRule:'규칙 수정',
+      condSummary:'현재값', nameRequired:'규칙명을 입력하세요', valueRequired:'값을 입력하세요' },
+    playbook: { title:'플레이북', principles:'투자원칙', goals:'목표', watchlist:'관심종목', addPrinciple:'+ 원칙추가', addGoal:'+ 목표추가', addWatch:'+ 관심종목추가',
+      moveToPortfolio:'포트폴리오에 추가', noWatchlist:'관심종목이 없습니다.', noPrinciples:'원칙이 없습니다.', noGoals:'목표가 없습니다.',
+      newPrinciple:'새 원칙을 입력하세요:', editPrinciple:'수정:', goalLabel:'목표명', goalMultiple:'목표 배수 (예: 2.5)', goalDeadline:'목표일', goalMemo:'메모',
+      watchName:'종목명', watchTicker:'티커', watchNote:'메모', deleteConfirm:'삭제할까요?', targetProgress:'목표', currentProgress:'현재', progressPct:'진행률' },
+    mydb: { title:'내 데이터베이스', exportXlsx:'엑셀 내보내기', exportJson:'JSON 내보내기', importJson:'JSON 가져오기', stocks:'종목', trades:'매매', news:'뉴스',
+      deleteStock:'이 종목과 매매기록을 모두 삭제할까요?', deleteTrade:'매매기록을 삭제할까요?', deleteNews:'삭제할까요?', overwriteConfirm:'기존 데이터를 모두 덮어쓸까요?' },
+    graphs: { title:'그래프', allocByStock:'종목별 비중', allocByCat:'카테고리별 비중', allocByAcc:'계좌별 비중',
+      prByStock:'종목별 수익률', prByCat:'카테고리별 수익률', cumulPnl:'누적 손익', monthlyReturn:'월별 수익 (최근 6개월)',
+      noData:'가격 데이터 없음', tooltipAlloc:'비중', tooltipValue:'평가금액', tooltipPnl:'손익' },
+    settings: { title:'설정', display:'화면', theme:'테마', light:'라이트', dark:'다크', language:'언어', currency:'달러종목 표시 통화',
+      accounts:'계좌', categories:'카테고리', data:'데이터', exportJson:'JSON 내보내기', importJson:'JSON 가져오기', reset:'전체 초기화',
+      resetConfirm:'모든 데이터가 삭제됩니다. 되돌릴 수 없습니다.', usd:'달러(USD)', krw:'원화(₩)', addCustom:'+ 추가', save:'저장', cancel:'취소', close:'닫기' },
+    common: { edit:'수정', delete:'삭제', confirm:'확인', close:'닫기', buy:'매수', sell:'매도', memo:'메모', date:'날짜', add:'추가', save:'저장', cancel:'취소',
+      name:'이름', search:'티커 또는 종목명 검색', na:'--', selectStock:'-- 선택 --', initialPosition:'초기 매수',
+      insufficientHoldings:'보유량이 부족합니다', invalidQty:'수량이 올바르지 않습니다', invalidPrice:'가격이 올바르지 않습니다', selectStockError:'종목을 선택하세요',
+      selectDateError:'날짜를 선택하세요', nameTickerRequired:'이름과 티커를 입력하세요', sourceRequired:'출처와 내용을 입력하세요',
+      searchPlaceholder:'예: NVDA, Apple, 삼성전자', noResults:'결과가 없습니다', searchFailed:'검색 실패. 티커를 직접 입력해보세요.',
+      exchange:'거래소', nameRequired:'이름과 티커를 입력하세요',
+      tradeRecorded:'매매가 기록되었습니다!', newsSaved:'뉴스가 저장되었습니다!', ruleSaved:'규칙이 저장되었습니다!',
+      dataOverwritten:'데이터를 덮어썼습니다', dataMerged:'데이터가 병합되었습니다', dataReset:'데이터가 초기화되었습니다',
+      importCancelled:'가져오기가 취소되었습니다', excelExported:'엑셀 내보내기 완료!', jsonExported:'JSON 내보내기 완료!',
+      stockAdded:'추가되었습니다!' }
   }
 };
 function t(path) {
@@ -988,7 +1038,7 @@ async function refreshAllPrices() {
   if (refreshing) return;
   refreshing = true;
   const btn = document.querySelector('[data-action="refresh"]');
-  if (btn) { btn.disabled = true; btn.textContent = '↻ Loading...'; }
+  if (btn) { btn.disabled = true; btn.textContent = t('dashboard.loading'); }
   try {
     const rate = await fetchExchangeRate();
     db.exchangeRate = { USDKRW: rate, updatedAt: new Date().toISOString() };
@@ -1203,17 +1253,17 @@ function renderDashboard() {
 
     <div class="table-toolbar">
       <select class="filter-select" id="f-account">
-        <option value="all">All Accounts</option>
+        <option value="all">${t('dashboard.allAccounts')}</option>
         ${getAccounts().map(a => `<option value="${a}" ${dashFilter.account===a?'selected':''}>${a}</option>`).join('')}
       </select>
       <select class="filter-select" id="f-category">
-        <option value="all">All Categories</option>
+        <option value="all">${t('dashboard.allCategories')}</option>
         ${getCategories().map(c => `<option value="${c}" ${dashFilter.category===c?'selected':''}>${c}</option>`).join('')}
       </select>
       <select class="filter-select" id="f-exchange">
-        <option value="all">US + KR</option>
-        <option value="US" ${dashFilter.exchange==='US'?'selected':''}>US Only</option>
-        <option value="KR" ${dashFilter.exchange==='KR'?'selected':''}>KR Only</option>
+        <option value="all">${t('dashboard.allMarkets')}</option>
+        <option value="US" ${dashFilter.exchange==='US'?'selected':''}>${t('dashboard.usOnly')}</option>
+        <option value="KR" ${dashFilter.exchange==='KR'?'selected':''}>${t('dashboard.krOnly')}</option>
       </select>
     </div>
 
@@ -1307,10 +1357,10 @@ function openAddStockModal(prefill = {}) {
       </div>
       <div id="search-phase">
         <div class="form-group">
-          <label class="form-label">Search Ticker / Company Name</label>
+          <label class="form-label">${t('common.search')}</label>
           <div class="flex-row">
-            <input class="form-input" id="stock-search-input" placeholder="e.g. NVDA, Apple, 삼성전자" value="${prefill.ticker||''}">
-            <button class="btn btn-primary" id="stock-search-btn">Search</button>
+            <input class="form-input" id="stock-search-input" placeholder="${t('common.searchPlaceholder')}" value="${prefill.ticker||''}">
+            <button class="btn btn-primary" id="stock-search-btn">${t('common.add')}</button>
           </div>
         </div>
         <div id="search-results-wrap"></div>
@@ -1318,16 +1368,16 @@ function openAddStockModal(prefill = {}) {
       <div id="add-form-phase" style="display:none">
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Name</label>
+            <label class="form-label">${t('cols.name')}</label>
             <input class="form-input" id="af-name" value="${prefill.name||''}">
           </div>
           <div class="form-group">
-            <label class="form-label">Ticker</label>
+            <label class="form-label">${t('cols.ticker')}</label>
             <input class="form-input mono" id="af-ticker" value="${prefill.ticker||''}">
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Exchange</label>
+          <label class="form-label">${t('common.exchange')}</label>
           <div class="toggle-group">
             <button class="toggle-btn ${prefill.exchange==='KR'?'':'active'}" data-exch="US">🇺🇸 US</button>
             <button class="toggle-btn ${prefill.exchange==='KR'?'active':''}" data-exch="KR">🇰🇷 KR</button>
@@ -1335,30 +1385,30 @@ function openAddStockModal(prefill = {}) {
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Holdings</label>
+            <label class="form-label">${t('cols.shares')}</label>
             <input class="form-input mono" id="af-holdings" type="number" min="0" step="any" placeholder="0">
           </div>
           <div class="form-group">
-            <label class="form-label">Avg Price</label>
+            <label class="form-label">${t('cols.avgPrice')}</label>
             <input class="form-input mono" id="af-avgprice" type="number" min="0" step="any" placeholder="0">
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Category</label>
+            <label class="form-label">${t('cols.category')}</label>
             <select class="form-select" id="af-category">
               ${getCategories().map(c=>`<option>${c}</option>`).join('')}
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Account</label>
+            <label class="form-label">${t('cols.account')}</label>
             <select class="form-select" id="af-account">
               ${getAccounts().map(a=>`<option>${a}</option>`).join('')}
             </select>
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Memo</label>
+          <label class="form-label">${t('common.memo')}</label>
           <textarea class="form-textarea" id="af-memo" rows="2"></textarea>
         </div>
       </div>
@@ -1397,10 +1447,10 @@ function openAddStockModal(prefill = {}) {
     const q = overlay.querySelector('#stock-search-input').value.trim();
     if (!q) return;
     const wrap = overlay.querySelector('#search-results-wrap');
-    wrap.innerHTML = '<div class="text-muted text-sm" style="padding:8px">Searching...</div>';
+    wrap.innerHTML = `<div class="text-muted text-sm" style="padding:8px">${t('news.searching')}</div>`;
     try {
       const results = await fetchSearchResults(q);
-      if (!results.length) { wrap.innerHTML = '<div class="text-muted text-sm" style="padding:8px">No results found</div>'; return; }
+      if (!results.length) { wrap.innerHTML = `<div class="text-muted text-sm" style="padding:8px">${t('common.noResults')}</div>`; return; }
       wrap.innerHTML = `<div class="search-results">${results.filter(r=>r.symbol&&r.shortname).map(r=>`
         <div class="search-result-item" data-symbol="${r.symbol}" data-name="${(r.shortname||'').replace(/"/g,'')}" data-exch="${r.exchange||''}">
           <div>
@@ -1412,7 +1462,7 @@ function openAddStockModal(prefill = {}) {
       wrap.querySelectorAll('.search-result-item').forEach(item => item.addEventListener('click', () => {
         showForm({ symbol:item.dataset.symbol, shortname:item.dataset.name, exchange:item.dataset.exch });
       }));
-    } catch(e) { wrap.innerHTML = '<div class="text-muted text-sm" style="padding:8px">Search failed. Try entering ticker manually.</div>'; showForm(null); }
+    } catch(e) { wrap.innerHTML = `<div class="text-muted text-sm" style="padding:8px">${t('common.searchFailed')}</div>`; showForm(null); }
   };
 
   overlay.querySelector('#stock-search-input').addEventListener('keydown', e => { if (e.key==='Enter') overlay.querySelector('#stock-search-btn').click(); });
@@ -1422,9 +1472,9 @@ function openAddStockModal(prefill = {}) {
     const ticker = overlay.querySelector('#af-ticker').value.trim().toUpperCase();
     const holdings = parseFloat(overlay.querySelector('#af-holdings').value);
     const avgPrice = parseFloat(overlay.querySelector('#af-avgprice').value);
-    if (!name || !ticker) { toast('Name and ticker required', 'error'); return; }
-    if (isNaN(holdings) || holdings < 0) { toast('Invalid holdings', 'error'); return; }
-    if (isNaN(avgPrice) || avgPrice < 0) { toast('Invalid avg price', 'error'); return; }
+    if (!name || !ticker) { toast(t('common.nameRequired'), 'error'); return; }
+    if (isNaN(holdings) || holdings < 0) { toast(t('common.invalidQty'), 'error'); return; }
+    if (isNaN(avgPrice) || avgPrice < 0) { toast(t('common.invalidPrice'), 'error'); return; }
     const newStock = {
       id: uid(), ticker, name, exchange: selExch,
       currency: selExch === 'KR' ? 'KRW' : 'USD',
@@ -1436,11 +1486,11 @@ function openAddStockModal(prefill = {}) {
     };
     db.stocks.push(newStock);
     if (holdings > 0) {
-      db.trades.push({ id:uid(), stockId:newStock.id, date:today(), type:'buy', quantity:holdings, price:avgPrice, memo:'Initial position' });
+      db.trades.push({ id:uid(), stockId:newStock.id, date:today(), type:'buy', quantity:holdings, price:avgPrice, memo:t('common.initialPosition') });
     }
     saveDB();
     overlay.remove();
-    toast(`${name} added!`, 'success');
+    toast(`${name} ${t("common.stockAdded")}`, "success");
     reRenderView(renderDashboard);
     fetchPrice(newStock).then(p => { newStock.currentPrice=p; newStock.priceUpdatedAt=new Date().toISOString(); saveDB(); if(currentView==='dashboard') reRenderView(renderDashboard); }).catch(()=>{});
   };
@@ -1475,13 +1525,13 @@ function renderTradelog() {
     </div>
     <div class="table-toolbar">
       <select class="filter-select" id="tl-stock">
-        <option value="all">All Stocks</option>
+        <option value="all">${t('trade.allStocks')}</option>
         ${db.stocks.map(s=>`<option value="${s.id}" ${tlFilter.stockId===s.id?'selected':''}>${s.name} (${s.ticker})</option>`).join('')}
       </select>
       <select class="filter-select" id="tl-type">
-        <option value="all">All</option>
-        <option value="buy" ${tlFilter.type==='buy'?'selected':''}>Buy</option>
-        <option value="sell" ${tlFilter.type==='sell'?'selected':''}>Sell</option>
+        <option value="all">${t('trade.allTypes')}</option>
+        <option value="buy" ${tlFilter.type==='buy'?'selected':''}>${t('common.buy')}</option>
+        <option value="sell" ${tlFilter.type==='sell'?'selected':''}>${t('common.sell')}</option>
       </select>
       <input type="date" class="filter-select" id="tl-from" value="${tlFilter.from}" style="width:130px">
       <input type="date" class="filter-select" id="tl-to"   value="${tlFilter.to}"   style="width:130px">
@@ -1495,7 +1545,7 @@ function renderTradelog() {
   app.querySelector('#tl-from').addEventListener('change',  e => { tlFilter.from=e.target.value;    reRenderView(renderTradelog); });
   app.querySelector('#tl-to').addEventListener('change',    e => { tlFilter.to=e.target.value;      reRenderView(renderTradelog); });
   app.querySelectorAll('[data-delete-trade]').forEach(b => b.addEventListener('click', e => {
-    if (!confirm('Delete this trade?')) return;
+    if (!confirm(t('trade.deleteConfirm'))) return;
     const id = b.dataset.deleteTrade;
     const tr = db.trades.find(x=>x.id===id);
     db.trades = db.trades.filter(x=>x.id!==id);
@@ -1546,7 +1596,7 @@ function openTradeModal(prefillStockId = null) {
       <div class="form-group">
         <label class="form-label">${t('trade.stock')}</label>
         <select class="form-select" id="tm-stock">
-          <option value="">-- Select --</option>
+          <option value="">${t('common.selectStock')}</option>
           ${db.stocks.map(s=>`<option value="${s.id}" ${s.id===prefillStockId?'selected':''}>${s.name} (${s.ticker})</option>`).join('')}
         </select>
       </div>
@@ -1612,15 +1662,15 @@ function openTradeModal(prefillStockId = null) {
     const price   = parseFloat(overlay.querySelector('#tm-price').value);
     const memo    = overlay.querySelector('#tm-memo').value;
     const stock   = db.stocks.find(s=>s.id===stockId);
-    if (!stockId || !stock) { toast('Select a stock', 'error'); return; }
-    if (!date) { toast('Select a date', 'error'); return; }
-    if (isNaN(qty) || qty <= 0) { toast('Invalid quantity', 'error'); return; }
-    if (isNaN(price) || price <= 0) { toast('Invalid price', 'error'); return; }
-    if (selType === 'sell' && qty > stock.holdings) { toast('Insufficient holdings', 'error'); return; }
+    if (!stockId || !stock) { toast(t('common.selectStockError'), 'error'); return; }
+    if (!date) { toast(t('common.selectDateError'), 'error'); return; }
+    if (isNaN(qty) || qty <= 0) { toast(t('common.invalidQty'), 'error'); return; }
+    if (isNaN(price) || price <= 0) { toast(t('common.invalidPrice'), 'error'); return; }
+    if (selType === 'sell' && qty > stock.holdings) { toast(t('common.insufficientHoldings'), 'error'); return; }
     db.trades.push({ id:uid(), stockId, date, type:selType, quantity:qty, price, memo });
     recalcStock(stockId);
     overlay.remove();
-    toast('Trade recorded!', 'success');
+    toast(t('common.tradeRecorded'), 'success');
     if (currentView === 'tradelog') reRenderView(renderTradelog);
     else if (currentView === 'dashboard') reRenderView(renderDashboard);
   };
@@ -1691,7 +1741,7 @@ function bindNewsActions() {
     const n = db.news.find(x=>x.id===b.dataset.editNews); if(n) openNewsModal(n);
   }));
   root.querySelectorAll('[data-delete-news]').forEach(b => b.addEventListener('click', () => {
-    if (!confirm('Delete this news item?')) return;
+    if (!confirm(t('news.deleteConfirm'))) return;
     db.news = db.news.filter(n=>n.id!==b.dataset.deleteNews);
     saveDB(); reRenderView(renderNews);
   }));
@@ -1711,7 +1761,7 @@ function openNewsModal(existing = null) {
   overlay.innerHTML = `
     <div class="modal">
       <div class="modal-header">
-        <span class="modal-title">${existing ? 'Edit News' : t('news.addNews')}</span>
+        <span class="modal-title">${existing ? t('news.editNews') : t('news.addNewsTitle')}</span>
         <button class="modal-close btn">✕</button>
       </div>
       <div class="form-row">
@@ -1756,13 +1806,13 @@ function openNewsModal(existing = null) {
     const url     = overlay.querySelector('#nm-url').value.trim();
     const summary = overlay.querySelector('#nm-summary').value.trim();
     const relatedStockIds = [...overlay.querySelectorAll('[data-stock-id].selected')].map(p=>p.dataset.stockId);
-    if (!source || !summary) { toast('Source and summary required', 'error'); return; }
+    if (!source || !summary) { toast(t('common.sourceRequired'), 'error'); return; }
     if (existing) {
       Object.assign(existing, { source, date, url, summary, relatedStockIds });
     } else {
       db.news.push({ id:uid(), source, date, url, summary, relatedStockIds });
     }
-    saveDB(); overlay.remove(); toast('News saved!', 'success'); reRenderView(renderNews);
+    saveDB(); overlay.remove(); toast(t('common.newsSaved'), 'success'); reRenderView(renderNews);
   };
 }
 
@@ -1775,44 +1825,96 @@ function renderGraphs() {
   const app = document.getElementById('app');
   app.innerHTML = `
   <div class="view">
-    <div class="view-header"><span class="view-title">Graphs</span></div>
+    <div class="view-header"><span class="view-title">${t('graphs.title')}</span></div>
     <div class="charts-grid">
-      <div class="chart-card"><div class="chart-title">Allocation by Stock</div><div class="chart-canvas-wrap"><canvas id="c-alloc-stock"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title">Allocation by Category</div><div class="chart-canvas-wrap"><canvas id="c-alloc-cat"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title">Allocation by Account</div><div class="chart-canvas-wrap"><canvas id="c-alloc-acc"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title">Profit Rate by Stock</div><div class="chart-canvas-wrap"><canvas id="c-pr-stock"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title">Profit Rate by Category</div><div class="chart-canvas-wrap"><canvas id="c-pr-cat"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title">Cumulative P&L</div><div class="chart-canvas-wrap"><canvas id="c-cumpnl"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title">Monthly Return (Last 6 Months)</div><div class="chart-canvas-wrap"><canvas id="c-monthly"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">${t('graphs.allocByStock')}</div><div class="chart-canvas-wrap"><canvas id="c-alloc-stock"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">${t('graphs.allocByCat')}</div><div class="chart-canvas-wrap"><canvas id="c-alloc-cat"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">${t('graphs.allocByAcc')}</div><div class="chart-canvas-wrap"><canvas id="c-alloc-acc"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">${t('graphs.prByStock')}</div><div class="chart-canvas-wrap"><canvas id="c-pr-stock"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">${t('graphs.prByCat')}</div><div class="chart-canvas-wrap"><canvas id="c-pr-cat"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">${t('graphs.cumulPnl')}</div><div class="chart-canvas-wrap"><canvas id="c-cumpnl"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">${t('graphs.monthlyReturn')}</div><div class="chart-canvas-wrap"><canvas id="c-monthly"></canvas></div></div>
     </div>
   </div>`;
   initCharts();
 }
 
 function initCharts() {
-  const total = totalPortfolioValue();
-  const isDark = db.settings.theme === 'dark';
+  const total   = totalPortfolioValue();
+  const isDark  = db.settings.theme === 'dark';
+  const isKo    = db.settings.language === 'ko';
   const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
   const textColor = isDark ? '#94A3B8' : '#64748B';
-  const baseOpts = { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ labels:{ color:textColor, font:{ size:11 } } } } };
 
+  // ── shared tooltip formatter ──────────────────────────────
+  const baseOpts = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: textColor, font: { size: 11 } } } }
+  };
+
+  // Donut: show value (₩) + allocation (%)
   function mkDonut(id, labels, data) {
-    const ctx = document.getElementById(id);
-    if (!ctx) return;
-    const inst = new Chart(ctx, { type:'doughnut', data:{ labels, datasets:[{ data, backgroundColor:CHART_COLORS, borderWidth:2, borderColor: isDark?'#111827':'#fff' }] }, options:{ ...baseOpts, cutout:'65%' } });
+    const ctx = document.getElementById(id); if (!ctx) return;
+    const dataTotal = data.reduce((a,b)=>a+b, 0);
+    const inst = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels, datasets: [{ data, backgroundColor: CHART_COLORS, borderWidth: 2, borderColor: isDark?'#111827':'#fff' }] },
+      options: {
+        ...baseOpts, cutout: '65%',
+        plugins: {
+          ...baseOpts.plugins,
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const val = ctx.parsed;
+                const pct = dataTotal > 0 ? (val / dataTotal * 100).toFixed(1) : '0';
+                const valStr = '₩' + Math.round(val).toLocaleString(isKo?'ko-KR':'en-US');
+                return ` ${ctx.label}: ${valStr}  (${pct}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
     chartInstances.set(id, inst);
   }
-  function mkHBar(id, labels, data) {
-    const ctx = document.getElementById(id);
-    if (!ctx) return;
+
+  // Horizontal bar: show value (%) + KRW amount
+  function mkHBar(id, labels, data, dataKRW) {
+    const ctx = document.getElementById(id); if (!ctx) return;
     const bgColors = data.map(v => v>=0 ? 'rgba(34,197,94,0.7)' : 'rgba(239,68,68,0.7)');
-    const inst = new Chart(ctx, { type:'bar', data:{ labels, datasets:[{ data, backgroundColor:bgColors, borderRadius:4 }] }, options:{ ...baseOpts, indexAxis:'y', plugins:{ legend:{display:false} }, scales:{ x:{ grid:{color:gridColor}, ticks:{color:textColor, callback:v=>v+'%'} }, y:{ grid:{display:false}, ticks:{color:textColor,font:{size:11}} } } } });
+    const inst = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [{ data, backgroundColor: bgColors, borderRadius: 4 }] },
+      options: {
+        ...baseOpts, indexAxis: 'y',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const pct = ctx.parsed.x.toFixed(2) + '%';
+                if (dataKRW && dataKRW[ctx.dataIndex] != null) {
+                  const krw = '₩' + Math.round(dataKRW[ctx.dataIndex]).toLocaleString(isKo?'ko-KR':'en-US');
+                  return ` ${pct}  (${krw})`;
+                }
+                return ` ${pct}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { grid:{color:gridColor}, ticks:{color:textColor, callback:v=>v+'%'} },
+          y: { grid:{display:false}, ticks:{color:textColor, font:{size:11}} }
+        }
+      }
+    });
     chartInstances.set(id, inst);
   }
 
   // 1. Allocation by stock
   const activeStocks = db.stocks.filter(s => s.holdings > 0 && s.currentPrice != null);
-  mkDonut('c-alloc-stock', activeStocks.map(s=>s.name), activeStocks.map(s => toKRW(s.holdings*s.currentPrice, s.currency)));
+  mkDonut('c-alloc-stock', activeStocks.map(s=>s.name), activeStocks.map(s=>toKRW(s.holdings*s.currentPrice,s.currency)));
 
   // 2. Allocation by category
   const byCat = {};
@@ -1824,60 +1926,110 @@ function initCharts() {
   activeStocks.forEach(s => { byAcc[s.account] = (byAcc[s.account]||0) + toKRW(s.holdings*s.currentPrice,s.currency); });
   mkDonut('c-alloc-acc', Object.keys(byAcc), Object.values(byAcc));
 
-  // 4. Profit rate by stock
+  // 4. Profit rate by stock (with KRW P&L amount in tooltip)
   const prStocks = activeStocks.map(s=>calcStock(s)).filter(s=>s.profitRate!=null).sort((a,b)=>b.profitRate-a.profitRate);
-  mkHBar('c-pr-stock', prStocks.map(s=>s.name), prStocks.map(s=>parseFloat(s.profitRate.toFixed(2))));
+  mkHBar('c-pr-stock',
+    prStocks.map(s=>s.name),
+    prStocks.map(s=>parseFloat(s.profitRate.toFixed(2))),
+    prStocks.map(s=>s.profitAmount!=null ? toKRW(s.profitAmount,s.currency) : null)
+  );
 
-  // 5. Profit rate by category
-  const catPR = {};
-  const catCount = {};
+  // 5. Profit rate by category (with avg KRW P&L)
+  const catPR={}, catKRW={}, catCount={};
   db.stocks.forEach(s => {
     const c = calcStock(s);
-    if (c.profitRate != null) { catPR[s.category]=(catPR[s.category]||0)+c.profitRate; catCount[s.category]=(catCount[s.category]||0)+1; }
+    if (c.profitRate != null) {
+      catPR[s.category]   = (catPR[s.category]||0) + c.profitRate;
+      catKRW[s.category]  = (catKRW[s.category]||0) + (c.profitAmount!=null?toKRW(c.profitAmount,s.currency):0);
+      catCount[s.category]= (catCount[s.category]||0) + 1;
+    }
   });
-  const catKeys = Object.keys(catPR).sort((a,b) => catPR[b]/catCount[b] - catPR[a]/catCount[a]);
-  mkHBar('c-pr-cat', catKeys, catKeys.map(k=>parseFloat((catPR[k]/catCount[k]).toFixed(2))));
+  const catKeys = Object.keys(catPR).sort((a,b)=>catPR[b]/catCount[b]-catPR[a]/catCount[a]);
+  mkHBar('c-pr-cat',
+    catKeys,
+    catKeys.map(k=>parseFloat((catPR[k]/catCount[k]).toFixed(2))),
+    catKeys.map(k=>catKRW[k])
+  );
 
-  // 6. Cumulative P&L
+  // 6. Cumulative P&L (line)
   const sortedTrades = db.trades.slice().sort((a,b)=>new Date(a.date)-new Date(b.date));
-  const cDates=[], cVals=[];
-  sortedTrades.forEach((tr,i) => {
+  const cDates=[], cVals=[], cRaw=[];
+  sortedTrades.forEach(tr => {
     const s = db.stocks.find(x=>x.id===tr.stockId);
     if (!s || !s.currentPrice) return;
-    const cp = s.currentPrice;
     const unrealized = db.stocks.reduce((sum,st)=>{
       if (!st.currentPrice||st.holdings<=0) return sum;
       return sum + toKRW((st.currentPrice-st.avgPrice)*st.holdings, st.currency);
     },0);
     cDates.push(formatDate(tr.date));
-    cVals.push(Math.round(unrealized/10000)/100);
+    cRaw.push(Math.round(unrealized));
+    cVals.push(isKo ? Math.round(unrealized/10000)/100 : Math.round(unrealized));
   });
   if (cDates.length) {
     const ctx6 = document.getElementById('c-cumpnl');
     if (ctx6) {
-      const inst = new Chart(ctx6, { type:'line', data:{ labels:cDates, datasets:[{ data:cVals, borderColor:'#3B82F6', backgroundColor:'rgba(59,130,246,0.1)', fill:true, tension:0.3, pointRadius:3 }] }, options:{ ...baseOpts, plugins:{legend:{display:false}}, scales:{ x:{grid:{color:gridColor},ticks:{color:textColor,maxTicksLimit:6,font:{size:10}}}, y:{grid:{color:gridColor},ticks:{color:textColor,callback:v=>v+'만'}} } } });
+      const yLabel = isKo ? (v=>v+'만') : (v=>'₩'+Math.round(v).toLocaleString('en-US'));
+      const inst = new Chart(ctx6, {
+        type: 'line',
+        data: { labels:cDates, datasets:[{ data:cVals, borderColor:'#3B82F6', backgroundColor:'rgba(59,130,246,0.1)', fill:true, tension:0.3, pointRadius:3 }] },
+        options: {
+          ...baseOpts,
+          plugins: {
+            legend: {display:false},
+            tooltip: { callbacks: { label: ctx => {
+              const raw = cRaw[ctx.dataIndex];
+              return ' ₩' + Math.round(raw).toLocaleString(isKo?'ko-KR':'en-US');
+            }}}
+          },
+          scales: {
+            x: { grid:{color:gridColor}, ticks:{color:textColor,maxTicksLimit:6,font:{size:10}} },
+            y: { grid:{color:gridColor}, ticks:{color:textColor, callback:yLabel} }
+          }
+        }
+      });
       chartInstances.set('c-cumpnl', inst);
     }
   }
 
-  // 7. Monthly return
+  // 7. Monthly return (bar)
   const now = new Date();
-  const months=[], monthVals=[];
+  const months=[], monthVals=[], monthRaw=[];
   for (let i=5;i>=0;i--) {
     const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
     const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-    const label = d.toLocaleDateString('en-US',{month:'short',year:'2-digit'});
+    const label = isKo
+      ? d.toLocaleDateString('ko-KR',{month:'short'})
+      : d.toLocaleDateString('en-US',{month:'short',year:'2-digit'});
     months.push(label);
     const monthTrades = db.trades.filter(t=>t.type==='sell'&&t.date.startsWith(key));
     const pnl = monthTrades.reduce((s,tr)=>{
       const st=db.stocks.find(x=>x.id===tr.stockId);
-      return s + toKRW((tr.price-st?.avgPrice)*tr.quantity, st?.currency||'USD');
+      return s + toKRW((tr.price-(st?.avgPrice||0))*tr.quantity, st?.currency||'USD');
     },0);
-    monthVals.push(Math.round(pnl/10000)/100);
+    monthRaw.push(Math.round(pnl));
+    monthVals.push(isKo ? Math.round(pnl/10000)/100 : Math.round(pnl));
   }
   const ctx7 = document.getElementById('c-monthly');
   if (ctx7) {
-    const inst = new Chart(ctx7, { type:'bar', data:{ labels:months, datasets:[{ data:monthVals, backgroundColor:monthVals.map(v=>v>=0?'rgba(34,197,94,0.7)':'rgba(239,68,68,0.7)'), borderRadius:4 }] }, options:{ ...baseOpts, plugins:{legend:{display:false}}, scales:{ x:{grid:{display:false},ticks:{color:textColor}}, y:{grid:{color:gridColor},ticks:{color:textColor,callback:v=>v+'만'}} } } });
+    const yLabel = isKo ? (v=>v+'만') : (v=>'₩'+Math.round(v).toLocaleString('en-US'));
+    const inst = new Chart(ctx7, {
+      type: 'bar',
+      data: { labels:months, datasets:[{ data:monthVals, backgroundColor:monthVals.map(v=>v>=0?'rgba(34,197,94,0.7)':'rgba(239,68,68,0.7)'), borderRadius:4 }] },
+      options: {
+        ...baseOpts,
+        plugins: {
+          legend: {display:false},
+          tooltip: { callbacks: { label: ctx => {
+            const raw = monthRaw[ctx.dataIndex];
+            return ' ₩' + Math.round(raw).toLocaleString(isKo?'ko-KR':'en-US');
+          }}}
+        },
+        scales: {
+          x: { grid:{display:false}, ticks:{color:textColor} },
+          y: { grid:{color:gridColor}, ticks:{color:textColor, callback:yLabel} }
+        }
+      }
+    });
     chartInstances.set('c-monthly', inst);
   }
 }
@@ -1907,8 +2059,8 @@ function evaluateRules() {
   return triggered;
 }
 
-const metricLabels  = { profitRate:'Profit Rate %', lossRate:'Loss Rate %', allocation:'Allocation %', targetPrice:'Target Price' };
-const opLabels      = { gt:'>', lt:'<', gte:'≥', lte:'≤' };
+const metricLabels  = () => ({ profitRate:t('rule.metricProfitRate'), lossRate:t('rule.metricLossRate'), allocation:t('rule.metricAllocation'), targetPrice:t('rule.metricTargetPrice') });
+const opLabels      = () => ({ gt:t('rule.opGt'), lt:t('rule.opLt'), gte:t('rule.opGte'), lte:t('rule.opLte') });
 
 function renderMyrule() {
   const triggered = evaluateRules();
@@ -1927,21 +2079,21 @@ function renderMyrule() {
         : triggered.map(({rule,stock,actual}) => `
           <div class="alert-card">
             <div class="alert-card-title">⚡ ${rule.name} — ${stock.name}</div>
-            <div class="alert-card-body mono">${metricLabels[rule.condition.metric]} ${opLabels[rule.condition.operator]} ${rule.condition.value} &nbsp;|&nbsp; Current: ${actual.toFixed(2)}</div>
+            <div class="alert-card-body mono">${metricLabels()[rule.condition.metric]} ${opLabels()[rule.condition.operator]} ${rule.condition.value} &nbsp;|&nbsp; ${t('rule.condSummary')}: ${actual.toFixed(2)}</div>
             <div class="alert-card-body mt-8">${rule.message}</div>
           </div>`).join('')
       }
     </div>
 
-    <div class="section-header" style="margin-top:16px">Rules</div>
+    <div class="section-header" style="margin-top:16px">${t('rule.title')}</div>
     <div id="rules-list">
-      ${db.rules.length === 0 ? `<div class="empty-state">No rules yet.</div>` :
+      ${db.rules.length === 0 ? `<div class="empty-state">${t('rule.noRules')}</div>` :
         db.rules.map(r => {
-          const tgt = r.condition.stockId ? db.stocks.find(s=>s.id===r.condition.stockId)?.name||'?' : 'All Stocks';
+          const tgt = r.condition.stockId ? db.stocks.find(s=>s.id===r.condition.stockId)?.name||'?' : t('rule.allStocks');
           return `<div class="rule-card">
             <div class="rule-card-body">
               <div class="rule-card-name">${r.name}</div>
-              <div class="rule-card-cond">${tgt} · ${metricLabels[r.condition.metric]} ${opLabels[r.condition.operator]} ${r.condition.value}</div>
+              <div class="rule-card-cond">${tgt} · ${metricLabels()[r.condition.metric]} ${opLabels()[r.condition.operator]} ${r.condition.value}</div>
               <div class="text-muted text-xs mt-8">${r.message}</div>
             </div>
             <label class="switch" title="Active">
@@ -1960,7 +2112,7 @@ function renderMyrule() {
     const r = db.rules.find(x=>x.id===b.dataset.editRule); if(r) openRuleModal(r);
   }));
   app.querySelectorAll('[data-delete-rule]').forEach(b => b.addEventListener('click', () => {
-    if (!confirm('Delete rule?')) return;
+    if (!confirm(t('rule.deleteConfirm'))) return;
     db.rules = db.rules.filter(r=>r.id!==b.dataset.deleteRule);
     saveDB(); reRenderView(renderMyrule);
   }));
@@ -1977,7 +2129,7 @@ function openRuleModal(existing = null) {
   overlay.innerHTML = `
     <div class="modal">
       <div class="modal-header">
-        <span class="modal-title">${existing ? 'Edit Rule' : t('rule.addRule')}</span>
+        <span class="modal-title">${existing ? t('rule.editRule') : t('rule.addRule')}</span>
         <button class="modal-close btn">✕</button>
       </div>
       <div class="form-group">
@@ -1998,13 +2150,13 @@ function openRuleModal(existing = null) {
         <div class="form-group">
           <label class="form-label">${t('rule.metric')}</label>
           <select class="form-select" id="rm-metric">
-            ${Object.entries(metricLabels).map(([k,v])=>`<option value="${k}" ${k===existing?.condition.metric?'selected':''}>${v}</option>`).join('')}
+            ${Object.entries(metricLabels()).map(([k,v])=>`<option value="${k}" ${k===existing?.condition.metric?'selected':''}>${v}</option>`).join('')}
           </select>
         </div>
         <div class="form-group">
           <label class="form-label">${t('rule.operator')}</label>
           <select class="form-select" id="rm-op">
-            ${Object.entries(opLabels).map(([k,v])=>`<option value="${k}" ${k===existing?.condition.operator?'selected':''}>${v}</option>`).join('')}
+            ${Object.entries(opLabels()).map(([k,v])=>`<option value="${k}" ${k===existing?.condition.operator?'selected':''}>${v}</option>`).join('')}
           </select>
         </div>
       </div>
@@ -2035,8 +2187,8 @@ function openRuleModal(existing = null) {
     const name = overlay.querySelector('#rm-name').value.trim();
     const val  = parseFloat(overlay.querySelector('#rm-val').value);
     const msg  = overlay.querySelector('#rm-msg').value.trim();
-    if (!name) { toast('Rule name required','error'); return; }
-    if (isNaN(val)) { toast('Value required','error'); return; }
+    if (!name) { toast(t('rule.nameRequired'),'error'); return; }
+    if (isNaN(val)) { toast(t('rule.valueRequired'),'error'); return; }
     const condition = {
       metric:   overlay.querySelector('#rm-metric').value,
       operator: overlay.querySelector('#rm-op').value,
@@ -2045,7 +2197,7 @@ function openRuleModal(existing = null) {
     };
     if (existing) { Object.assign(existing, { name, condition, message:msg }); }
     else { db.rules.push({ id:uid(), name, active:true, condition, message:msg }); }
-    saveDB(); overlay.remove(); toast('Rule saved!','success'); reRenderView(renderMyrule);
+    saveDB(); overlay.remove(); toast(t('common.ruleSaved'),'success'); reRenderView(renderMyrule);
   };
 }
 
@@ -2157,7 +2309,7 @@ function bindPlaybookActions() {
   if (!content) return;
 
   content.querySelector('[data-action="add-principle"]')?.addEventListener('click', () => {
-    const text = prompt('New principle:'); if (!text) return;
+    const text = prompt(t('playbook.newPrinciple')); if (!text) return;
     db.playbook.principles.push({ id:uid(), text }); saveDB();
     content.innerHTML = renderPrinciples(); bindPlaybookActions();
   });
@@ -2173,15 +2325,15 @@ function bindPlaybookActions() {
   }));
   content.querySelectorAll('[data-edit-p]').forEach(b => b.addEventListener('click', () => {
     const p=db.playbook.principles.find(x=>x.id===b.dataset.editP);
-    const t2=prompt('Edit:',p?.text); if(t2&&p){p.text=t2;saveDB();content.innerHTML=renderPrinciples();bindPlaybookActions();}
+    const t2=prompt(t('playbook.editPrinciple'),p?.text); if(t2&&p){p.text=t2;saveDB();content.innerHTML=renderPrinciples();bindPlaybookActions();}
   }));
   content.querySelectorAll('[data-delete-p]').forEach(b => b.addEventListener('click', () => {
-    if(!confirm('Delete?'))return;db.playbook.principles=db.playbook.principles.filter(x=>x.id!==b.dataset.deleteP);saveDB();content.innerHTML=renderPrinciples();bindPlaybookActions();
+    if(!confirm(t('playbook.deleteConfirm')))return;db.playbook.principles=db.playbook.principles.filter(x=>x.id!==b.dataset.deleteP);saveDB();content.innerHTML=renderPrinciples();bindPlaybookActions();
   }));
 
   content.querySelector('[data-action="add-goal"]')?.addEventListener('click', () => openGoalModal());
   content.querySelectorAll('[data-edit-g]').forEach(b=>b.addEventListener('click',()=>{const g=db.playbook.goals.find(x=>x.id===b.dataset.editG);if(g)openGoalModal(g);}));
-  content.querySelectorAll('[data-delete-g]').forEach(b=>b.addEventListener('click',()=>{if(!confirm('Delete?'))return;db.playbook.goals=db.playbook.goals.filter(x=>x.id!==b.dataset.deleteG);saveDB();content.innerHTML=renderGoals();bindPlaybookActions();}));
+  content.querySelectorAll('[data-delete-g]').forEach(b=>b.addEventListener('click',()=>{if(!confirm(t('playbook.deleteConfirm')))return;db.playbook.goals=db.playbook.goals.filter(x=>x.id!==b.dataset.deleteG);saveDB();content.innerHTML=renderGoals();bindPlaybookActions();}));
 
   content.querySelector('[data-action="add-watch"]')?.addEventListener('click', () => openWatchModal());
   content.querySelectorAll('[data-move-to-pf]').forEach(b=>b.addEventListener('click',()=>{
@@ -2190,19 +2342,19 @@ function bindPlaybookActions() {
     db.playbook.watchlist=db.playbook.watchlist.filter(x=>x.id!==w.id);saveDB();
     navigate('dashboard'); openAddStockModal({ ticker:w.ticker, name:w.name, exchange:w.exchange });
   }));
-  content.querySelectorAll('[data-delete-w]').forEach(b=>b.addEventListener('click',()=>{if(!confirm('Delete?'))return;db.playbook.watchlist=db.playbook.watchlist.filter(x=>x.id!==b.dataset.deleteW);saveDB();content.innerHTML=renderWatchlist();bindPlaybookActions();}));
+  content.querySelectorAll('[data-delete-w]').forEach(b=>b.addEventListener('click',()=>{if(!confirm(t('playbook.deleteConfirm')))return;db.playbook.watchlist=db.playbook.watchlist.filter(x=>x.id!==b.dataset.deleteW);saveDB();content.innerHTML=renderWatchlist();bindPlaybookActions();}));
 }
 
 function openGoalModal(existing=null) {
   const overlay=document.createElement('div');overlay.className='modal-overlay';
   overlay.innerHTML=`<div class="modal">
-    <div class="modal-header"><span class="modal-title">${existing?'Edit Goal':t('playbook.addGoal')}</span><button class="modal-close btn">✕</button></div>
-    <div class="form-group"><label class="form-label">Label</label><input class="form-input" id="gm-label" value="${existing?.label||''}"></div>
+    <div class="modal-header"><span class="modal-title">${existing?t('playbook.addGoal'):t('playbook.addGoal')}</span><button class="modal-close btn">✕</button></div>
+    <div class="form-group"><label class="form-label">${t('playbook.goalLabel')}</label><input class="form-input" id="gm-label" value="${existing?.label||''}"></div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Target Multiple (e.g. 2.5)</label><input class="form-input mono" id="gm-mult" type="number" step="0.1" value="${existing?.targetMultiple||''}"></div>
-      <div class="form-group"><label class="form-label">Deadline</label><input class="form-input" id="gm-dl" type="date" value="${existing?.deadline||''}"></div>
+      <div class="form-group"><label class="form-label">${t('playbook.goalMultiple')}</label><input class="form-input mono" id="gm-mult" type="number" step="0.1" value="${existing?.targetMultiple||''}"></div>
+      <div class="form-group"><label class="form-label">${t('playbook.goalDeadline')}</label><input class="form-input" id="gm-dl" type="date" value="${existing?.deadline||''}"></div>
     </div>
-    <div class="form-group"><label class="form-label">Memo</label><textarea class="form-textarea" id="gm-memo" rows="2">${existing?.memo||''}</textarea></div>
+    <div class="form-group"><label class="form-label">${t('playbook.goalMemo')}</label><textarea class="form-textarea" id="gm-memo" rows="2">${existing?.memo||''}</textarea></div>
     <div class="modal-footer">
       <button class="btn btn-secondary" id="gm-cancel">${t('common.cancel')}</button>
       <button class="btn btn-primary"   id="gm-save">${t('common.save')}</button>
@@ -2217,10 +2369,10 @@ function openGoalModal(existing=null) {
     const mult=parseFloat(overlay.querySelector('#gm-mult').value);
     const dl=overlay.querySelector('#gm-dl').value;
     const memo=overlay.querySelector('#gm-memo').value;
-    if(!label||isNaN(mult)){toast('Label and multiple required','error');return;}
+    if(!label||isNaN(mult)){toast(t('common.nameRequired'),'error');return;}
     if(existing)Object.assign(existing,{label,targetMultiple:mult,deadline:dl,memo});
     else db.playbook.goals.push({id:uid(),label,targetMultiple:mult,deadline:dl,memo});
-    saveDB();overlay.remove();toast('Goal saved!','success');
+    saveDB();overlay.remove();toast(t('common.save')+'!','success');
     const c=document.getElementById('pb-content');if(c){c.innerHTML=renderGoals();bindPlaybookActions();}
   };
 }
@@ -2231,16 +2383,16 @@ function openWatchModal(existing=null) {
   overlay.innerHTML=`<div class="modal">
     <div class="modal-header"><span class="modal-title">${t('playbook.addWatch')}</span><button class="modal-close btn">✕</button></div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Name</label><input class="form-input" id="wm-name" value="${existing?.name||''}"></div>
-      <div class="form-group"><label class="form-label">Ticker</label><input class="form-input mono" id="wm-ticker" value="${existing?.ticker||''}"></div>
+      <div class="form-group"><label class="form-label">${t('playbook.watchName')}</label><input class="form-input" id="wm-name" value="${existing?.name||''}"></div>
+      <div class="form-group"><label class="form-label">${t('playbook.watchTicker')}</label><input class="form-input mono" id="wm-ticker" value="${existing?.ticker||''}"></div>
     </div>
-    <div class="form-group"><label class="form-label">Exchange</label>
+    <div class="form-group"><label class="form-label">${t('common.exchange')}</label>
       <div class="toggle-group">
         <button class="toggle-btn ${selExch==='US'?'active':''}" data-exch="US">🇺🇸 US</button>
         <button class="toggle-btn ${selExch==='KR'?'active':''}" data-exch="KR">🇰🇷 KR</button>
       </div>
     </div>
-    <div class="form-group"><label class="form-label">Note</label><input class="form-input" id="wm-note" value="${existing?.note||''}"></div>
+    <div class="form-group"><label class="form-label">${t('playbook.watchNote')}</label><input class="form-input" id="wm-note" value="${existing?.note||''}"></div>
     <div class="modal-footer">
       <button class="btn btn-secondary" id="wm-cancel">${t('common.cancel')}</button>
       <button class="btn btn-primary"   id="wm-save">${t('common.save')}</button>
@@ -2255,10 +2407,10 @@ function openWatchModal(existing=null) {
     const name=overlay.querySelector('#wm-name').value.trim();
     const ticker=overlay.querySelector('#wm-ticker').value.trim().toUpperCase();
     const note=overlay.querySelector('#wm-note').value.trim();
-    if(!name||!ticker){toast('Name and ticker required','error');return;}
+    if(!name||!ticker){toast(t('common.nameRequired'),'error');return;}
     if(existing)Object.assign(existing,{name,ticker,exchange:selExch,note});
     else db.playbook.watchlist.push({id:uid(),name,ticker,exchange:selExch,note});
-    saveDB();overlay.remove();toast('Watchlist updated!','success');
+    saveDB();overlay.remove();toast(t('common.save')+'!','success');
     const c=document.getElementById('pb-content');if(c){c.innerHTML=renderWatchlist();bindPlaybookActions();}
   };
 }
@@ -2300,17 +2452,17 @@ function renderMydb() {
     const r=new FileReader(); r.onload=ev=>{
       try {
         const data=JSON.parse(ev.target.result);
-        const choice=confirm('Overwrite all data? (OK=Overwrite, Cancel=Merge)');
-        if(choice){db=data;saveDB();toast('Data overwritten','success');}
+        const choice=confirm(t('mydb.overwriteConfirm'));
+        if(choice){db=data;saveDB();toast(t('common.dataOverwritten'),'success');}
         else{
           data.stocks?.forEach(s=>{if(!db.stocks.find(x=>x.id===s.id))db.stocks.push(s);});
           data.trades?.forEach(t=>{if(!db.trades.find(x=>x.id===t.id))db.trades.push(t);});
           data.news?.forEach(n=>{if(!db.news.find(x=>x.id===n.id))db.news.push(n);});
           data.rules?.forEach(r=>{if(!db.rules.find(x=>x.id===r.id))db.rules.push(r);});
-          saveDB();toast('Data merged','success');
+          saveDB();toast(t('common.dataMerged'),'success');
         }
         reRenderView(renderMydb);
-      } catch(err){toast('Invalid JSON file','error');}
+      } catch(err){toast(t('common.invalidQty'),'error');}
     }; r.readAsText(f);
   });
   bindMydbActions();
@@ -2398,9 +2550,9 @@ function renderPagination(total, page, tab) {
 function bindMydbActions() {
   const content = document.getElementById('mydb-content');
   if (!content) return;
-  content.querySelectorAll('[data-delete-stock]').forEach(b=>b.addEventListener('click',()=>{if(!confirm('Delete stock and all its trades?'))return;const id=b.dataset.deleteStock;db.stocks=db.stocks.filter(x=>x.id!==id);db.trades=db.trades.filter(x=>x.stockId!==id);saveDB();document.getElementById('mydb-content').innerHTML=renderMydbTab();bindMydbActions();}));
-  content.querySelectorAll('[data-delete-trade-db]').forEach(b=>b.addEventListener('click',()=>{if(!confirm('Delete trade?'))return;const t=db.trades.find(x=>x.id===b.dataset.deleteTradeDb);db.trades=db.trades.filter(x=>x.id!==b.dataset.deleteTradeDb);if(t)recalcStock(t.stockId);saveDB();document.getElementById('mydb-content').innerHTML=renderMydbTab();bindMydbActions();}));
-  content.querySelectorAll('[data-delete-news-db]').forEach(b=>b.addEventListener('click',()=>{if(!confirm('Delete?'))return;db.news=db.news.filter(x=>x.id!==b.dataset.deleteNewsDb);saveDB();document.getElementById('mydb-content').innerHTML=renderMydbTab();bindMydbActions();}));
+  content.querySelectorAll('[data-delete-stock]').forEach(b=>b.addEventListener('click',()=>{if(!confirm(t('mydb.deleteStock')))return;const id=b.dataset.deleteStock;db.stocks=db.stocks.filter(x=>x.id!==id);db.trades=db.trades.filter(x=>x.stockId!==id);saveDB();document.getElementById('mydb-content').innerHTML=renderMydbTab();bindMydbActions();}));
+  content.querySelectorAll('[data-delete-trade-db]').forEach(b=>b.addEventListener('click',()=>{if(!confirm(t('mydb.deleteTrade')))return;const t=db.trades.find(x=>x.id===b.dataset.deleteTradeDb);db.trades=db.trades.filter(x=>x.id!==b.dataset.deleteTradeDb);if(t)recalcStock(t.stockId);saveDB();document.getElementById('mydb-content').innerHTML=renderMydbTab();bindMydbActions();}));
+  content.querySelectorAll('[data-delete-news-db]').forEach(b=>b.addEventListener('click',()=>{if(!confirm(t('playbook.deleteConfirm')))return;db.news=db.news.filter(x=>x.id!==b.dataset.deleteNewsDb);saveDB();document.getElementById('mydb-content').innerHTML=renderMydbTab();bindMydbActions();}));
   content.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>{mydbPage[b.dataset.ptab]=parseInt(b.dataset.page);document.getElementById('mydb-content').innerHTML=renderMydbTab();bindMydbActions();}));
 }
 
@@ -2416,14 +2568,14 @@ function exportExcel() {
   const ruleRows=db.rules.map(r=>({Name:r.name,Active:r.active,Metric:r.condition.metric,Operator:r.condition.operator,Value:r.condition.value,'Target Stock':r.condition.stockId?db.stocks.find(s=>s.id===r.condition.stockId)?.name||'?':'All',Message:r.message}));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ruleRows.length?ruleRows:[{note:'No rules'}]), 'Rules');
   XLSX.writeFile(wb, 'stockmanager_backup.xlsx');
-  toast('Excel exported!', 'success');
+  toast(t('common.excelExported'), 'success');
 }
 
 function exportJSON() {
   const blob = new Blob([JSON.stringify(db, null, 2)], {type:'application/json'});
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
   a.download = 'stockmanager_backup.json'; a.click();
-  toast('JSON exported!', 'success');
+  toast(t('common.jsonExported'), 'success');
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -2538,8 +2690,8 @@ function renderSettings() {
   app.querySelectorAll('[data-del-cat]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();db.settings.customCategories=db.settings.customCategories.filter(x=>x!==b.dataset.delCat);saveDB();reRenderView(renderSettings);}));
   app.querySelector('[data-action="exp-json"]').addEventListener('click',exportJSON);
   app.querySelector('[data-action="imp-json"]').addEventListener('click',()=>app.querySelector('#set-import-file').click());
-  app.querySelector('#set-import-file').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const data=JSON.parse(ev.target.result);if(confirm('Overwrite all data?')){db=data;saveDB();document.body.setAttribute('data-theme',db.settings.theme||'light');toast('Data overwritten','success');reRenderView(renderSettings);}else{toast('Import cancelled','info');}}catch(err){toast('Invalid JSON','error');}};r.readAsText(f);});
-  app.querySelector('[data-action="reset"]').addEventListener('click',()=>{if(confirm(t('settings.resetConfirm'))){db=deepClone(DEFAULT_DB);seedIfEmpty();saveDB();document.body.setAttribute('data-theme','light');toast('Data reset','success');navigate('home');}});
+  app.querySelector('#set-import-file').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const data=JSON.parse(ev.target.result);if(confirm(t('mydb.overwriteConfirm'))){db=data;saveDB();document.body.setAttribute('data-theme',db.settings.theme||'light');toast(t('common.dataOverwritten'),'success');reRenderView(renderSettings);}else{toast(t('common.importCancelled'),'info');}}catch(err){toast(t('common.invalidQty'),'error');}};r.readAsText(f);});
+  app.querySelector('[data-action="reset"]').addEventListener('click',()=>{if(confirm(t('settings.resetConfirm'))){db=deepClone(DEFAULT_DB);seedIfEmpty();saveDB();document.body.setAttribute('data-theme','light');toast(t('common.dataReset'),'success');navigate('home');}});
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -2655,7 +2807,7 @@ function renderDetailNews(stock) {
 function bindDetailTradeActions(overlay, stock) {
   overlay.querySelector('#detail-trade-btn')?.addEventListener('click', () => { overlay.remove(); openTradeModal(stock.id); });
   overlay.querySelectorAll('[data-del-detail-trade]').forEach(b=>b.addEventListener('click',()=>{
-    if(!confirm('Delete?'))return;
+    if(!confirm(t('playbook.deleteConfirm')))return;
     const tr=db.trades.find(x=>x.id===b.dataset.delDetailTrade);
     db.trades=db.trades.filter(x=>x.id!==b.dataset.delDetailTrade);
     if(tr)recalcStock(tr.stockId);
