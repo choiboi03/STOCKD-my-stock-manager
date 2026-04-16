@@ -37,25 +37,25 @@
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
 }
 [data-theme="dark"] {
-  --bg: #0A0F1A;
-  --surface: #111827;
-  --surface2: #1A2235;
-  --border: #1E293B;
-  --border2: #2D3F55;
+  --bg: #000000;
+  --surface: #111111;
+  --surface2: #1A1A1A;
+  --border: #222222;
+  --border2: #333333;
   --text: #F1F5F9;
   --text2: #CBD5E1;
-  --muted: #64748B;
+  --muted: #666666;
   --accent: #3B82F6;
-  --accent-dim: rgba(59,130,246,0.12);
+  --accent-dim: rgba(59,130,246,0.15);
   --profit: #22C55E;
-  --profit-dim: rgba(34,197,94,0.1);
+  --profit-dim: rgba(34,197,94,0.12);
   --loss: #EF4444;
-  --loss-dim: rgba(239,68,68,0.1);
+  --loss-dim: rgba(239,68,68,0.12);
   --alert: #F59E0B;
   --alert-dim: rgba(245,158,11,0.12);
-  --shadow: 0 1px 3px rgba(0,0,0,0.3);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+  --shadow: 0 1px 0 rgba(255,255,255,0.04);
+  --shadow-md: 0 0 0 1px rgba(255,255,255,0.06);
+  --shadow-lg: 0 0 0 1px rgba(255,255,255,0.08), 0 8px 32px rgba(0,0,0,0.8);
 }
 
 /* ═══════════════════════════════════════════
@@ -532,7 +532,7 @@ tr.row-zero td { opacity: 0.45; }
 ═══════════════════════════════════════════ */
 .shimmer {
   background: linear-gradient(90deg,
-    var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
+    var(--surface2) 25%, var(--border2) 50%, var(--surface2) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
   border-radius: 3px;
@@ -2160,7 +2160,7 @@ function initCharts() {
     const dataTotal = data.reduce((a,b)=>a+b, 0);
     const inst = new Chart(ctx, {
       type: 'doughnut',
-      data: { labels, datasets: [{ data, backgroundColor: CHART_COLORS, borderWidth: 2, borderColor: isDark?'#111827':'#fff' }] },
+      data: { labels, datasets: [{ data, backgroundColor: CHART_COLORS, borderWidth: 2, borderColor: isDark?'#111111':'#fff' }] },
       options: {
         ...baseOpts, cutout: '65%',
         plugins: {
