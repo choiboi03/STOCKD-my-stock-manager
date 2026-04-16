@@ -145,7 +145,11 @@ a:hover { text-decoration: underline; }
   border-color: var(--tile-color, var(--accent));
 }
 .home-tile:active { transform: translateY(0); }
-.home-tile-icon { font-size: 24px; line-height: 1; }
+.home-tile-icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  margin-bottom: 2px;
+}
 .home-tile-label {
   font-size: 13px; font-weight: 700;
   color: var(--text);
@@ -1217,15 +1221,51 @@ let currentView = 'home';
 const chartInstances = new Map();
 function destroyCharts() { chartInstances.forEach(c => c.destroy()); chartInstances.clear(); }
 
+const TILE_ICONS = {
+  dashboard: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+    <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+  </svg>`,
+  graphs: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 21H4.6C4 21 3 20.5 3 19.4V3"/><path d="M7 14l4-4 3 3 4-5"/>
+    <circle cx="7" cy="14" r="1.2" fill="currentColor" stroke="none"/>
+    <circle cx="11" cy="10" r="1.2" fill="currentColor" stroke="none"/>
+    <circle cx="14" cy="13" r="1.2" fill="currentColor" stroke="none"/>
+    <circle cx="18" cy="8" r="1.2" fill="currentColor" stroke="none"/>
+  </svg>`,
+  tradelog: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 2v20M2 12h20"/><path d="M7 7l5-5 5 5"/><path d="M7 17l5 5 5-5"/>
+  </svg>`,
+  news: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4"/>
+    <path d="M14 2v5h5"/><path d="M2 12h7"/><path d="M2 16h7"/><path d="M2 20h7"/>
+  </svg>`,
+  myrule: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+  </svg>`,
+  playbook: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+    <line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/>
+  </svg>`,
+  mydb: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+  </svg>`,
+  settings: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  </svg>`,
+};
+
 const VIEW_META_DEF = [
-  { id:'dashboard', icon:'◈', labelKey:'nav.dashboard', descEn:'Portfolio overview & stock table',   descKo:'포트폴리오 현황 & 종목 표',     color:'#2563EB' },
-  { id:'graphs',    icon:'◉', labelKey:'nav.graphs',    descEn:'Charts & allocation breakdown',      descKo:'차트 & 비중 분석',              color:'#8B5CF6' },
-  { id:'tradelog',  icon:'⊕', labelKey:'nav.tradelog',  descEn:'Buy/sell history & recording',       descKo:'매수·매도 기록 & 입력',          color:'#059669' },
-  { id:'news',      icon:'◎', labelKey:'nav.news',      descEn:'News scrapbook with stock tags',     descKo:'뉴스 스크랩 & 종목 태그',        color:'#0891B2' },
-  { id:'myrule',    icon:'⚡', labelKey:'nav.myrule',    descEn:'Alerts & rule engine',               descKo:'알림 & 규칙 엔진',               color:'#D97706' },
-  { id:'playbook',  icon:'◷', labelKey:'nav.playbook',  descEn:'Principles, goals & watchlist',      descKo:'투자원칙·목표·관심종목',          color:'#7C3AED' },
-  { id:'mydb',      icon:'▦', labelKey:'nav.mydb',      descEn:'Raw data + Excel/JSON export',       descKo:'전체 데이터 + 엑셀/JSON 내보내기', color:'#475569' },
-  { id:'settings',  icon:'⚙', labelKey:'nav.settings',  descEn:'Theme, language & preferences',      descKo:'테마·언어·환경설정',              color:'#64748B' },
+  { id:'dashboard', labelKey:'nav.dashboard', descEn:'Portfolio overview & stock table',    descKo:'포트폴리오 현황 & 종목 표',      color:'#2563EB' },
+  { id:'graphs',    labelKey:'nav.graphs',    descEn:'Charts & allocation breakdown',       descKo:'차트 & 비중 분석',               color:'#8B5CF6' },
+  { id:'tradelog',  labelKey:'nav.tradelog',  descEn:'Buy/sell history & recording',        descKo:'매수·매도 기록 & 입력',           color:'#059669' },
+  { id:'news',      labelKey:'nav.news',      descEn:'News scrapbook with stock tags',      descKo:'뉴스 스크랩 & 종목 태그',         color:'#0891B2' },
+  { id:'myrule',    labelKey:'nav.myrule',    descEn:'Alerts & rule engine',                descKo:'알림 & 규칙 엔진',                color:'#D97706' },
+  { id:'playbook',  labelKey:'nav.playbook',  descEn:'Principles, goals & watchlist',       descKo:'투자원칙·목표·관심종목',           color:'#7C3AED' },
+  { id:'mydb',      labelKey:'nav.mydb',      descEn:'Raw data + Excel/JSON export',        descKo:'전체 데이터 + 엑셀/JSON 내보내기', color:'#475569' },
+  { id:'settings',  labelKey:'nav.settings',  descEn:'Theme, language & preferences',       descKo:'테마·언어·환경설정',               color:'#64748B' },
 ];
 function getViewMeta() {
   const isKo = db.settings?.language === 'ko';
@@ -1263,7 +1303,7 @@ function renderHome() {
         if (v.id === 'tradelog' && db.trades.length > 0)  badge = isKo ? db.trades.length + '건' : db.trades.length + ' trades';
         if (v.id === 'news'     && db.news.length > 0)    badge = isKo ? db.news.length + '개' : db.news.length + ' items';
         return `<button class="home-tile" data-goto="${v.id}" style="--tile-color:${v.color}">
-          <div class="home-tile-icon">${v.icon}</div>
+          <div class="home-tile-icon" style="color:${v.color}">${TILE_ICONS[v.id]}</div>
           <div class="home-tile-label">${v.label}</div>
           <div class="home-tile-desc">${v.desc}</div>
           ${badge ? `<span class="home-tile-badge">${badge}</span>` : ''}
@@ -3086,8 +3126,9 @@ const ONBOARD_CONTENT = {
       { icon:'⚡', title:'My Rule', desc:'Set alerts — get notified when profit or allocation thresholds are hit' },
     ],
     dataTitle: 'Start with sample data or fresh?',
-    dataSample: { icon:'📊', title:'Sample data', desc:'NVIDIA · Samsung · Apple — explore the app right away' },
-    dataFresh:  { icon:'✦', title:'Start fresh', desc:'Go to My DB → + Add Stock to add your own holdings' },
+    dataSample: { icon:'📊', title:'Sample data', desc:'NVIDIA · Samsung · Apple' },
+    dataFresh:  { icon:'✦', title:'Start fresh', desc:'Add your own stocks' },
+    dataHint: 'You can always add stocks in My DB → + Add Stock',
     next: 'Next →',
     getStarted: 'Get Started',
   },
@@ -3103,8 +3144,9 @@ const ONBOARD_CONTENT = {
       { icon:'⚡', title:'내 규칙', desc:'수익률·비중 기준 설정 → 조건 충족 시 알림' },
     ],
     dataTitle: '샘플 데이터로 시작할까요?',
-    dataSample: { icon:'📊', title:'샘플 데이터', desc:'엔비디아 · 삼성전자 · 애플로 앱을 바로 탐색해보세요' },
-    dataFresh:  { icon:'✦', title:'빈 화면으로', desc:'내DB → + 종목추가 에서 직접 종목을 추가해보세요' },
+    dataSample: { icon:'📊', title:'샘플 데이터', desc:'엔비디아 · 삼성전자 · 애플' },
+    dataFresh:  { icon:'✦', title:'빈 화면으로', desc:'직접 종목을 추가합니다' },
+    dataHint: '내DB → + 종목추가 에서 언제든지 종목을 추가할 수 있어요',
     next: '다음 →',
     getStarted: '시작하기',
   }
@@ -3166,7 +3208,8 @@ function renderOnboardStep(step) {
   if (step === 3) {
     body = `
       <div class="onboard-step-label">${c.stepData}</div>
-      <p style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:16px">${c.dataTitle}</p>
+      <p style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:4px">${c.dataTitle}</p>
+      <p style="font-size:11px;color:var(--accent);text-align:center;margin-bottom:16px;font-weight:500">${c.dataHint}</p>
       <div class="onboard-data-grid">
         <button class="onboard-data-btn ${_obData==='sample'?'active':''}" data-data="sample">
           <div class="onboard-data-icon">${c.dataSample.icon}</div>
