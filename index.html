@@ -336,6 +336,19 @@ a:hover { text-decoration: underline; }
   color: var(--text); font-size: 12px;
   cursor: pointer;
 }
+/* Date inputs in filter bars — consistent width across browsers */
+.filter-date {
+  width: 136px;
+  cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+}
+/* Date inputs inside modals — match other form-inputs exactly */
+input[type="date"].form-input {
+  width: 100%;
+  font-family: inherit;
+  cursor: pointer;
+}
 .table-wrap {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -837,7 +850,8 @@ const i18n = {
   en: {
     nav: { dashboard:'Dashboard', graphs:'Graphs', tradelog:'Trade Log', news:'News', myrule:'My Rule', playbook:'Playbook', mydb:'My DB', settings:'Settings' },
     dashboard: { title:'Dashboard', addStock:'+ Add Stock', refreshPrices:'↻ Refresh Prices', totalValue:'Total Value', totalPL:'Total P&L', numHoldings:'Holdings', usdkrw:'USD / KRW',
-      allAccounts:'All Accounts', allCategories:'All Categories', allMarkets:'All Markets', usOnly:'US Only', krOnly:'KR Only', loading:'↻ Loading...' },
+      allAccounts:'All Accounts', allCategories:'All Categories', allMarkets:'All Markets', usOnly:'US Only', krOnly:'KR Only', loading:'↻ Loading...',
+      emptyState:'No stocks yet. Go to My DB → + Add Stock to get started.' },
     cols: { name:'Name', ticker:'Ticker', account:'Account', category:'Category', shares:'Shares', avgPrice:'Avg Price', curPrice:'Cur Price', pl:'P&L', plPct:'P&L %', alloc:'Alloc %' },
     trade: { title:'Trade Log', recordTrade:'+ Record Trade', date:'Date', stock:'Stock', type:'Type', qty:'Qty', price:'Price/Share', total:'Total', memo:'Memo', buy:'Buy', sell:'Sell',
       noTrades:'No trades recorded yet.', allStocks:'All Stocks', allTypes:'All', deleteConfirm:'Delete this trade?' },
@@ -874,7 +888,8 @@ const i18n = {
   ko: {
     nav: { dashboard:'대시보드', graphs:'그래프', tradelog:'매매일지', news:'뉴스', myrule:'내규칙', playbook:'플레이북', mydb:'내DB', settings:'설정' },
     dashboard: { title:'대시보드', addStock:'+ 종목추가', refreshPrices:'↻ 가격갱신', totalValue:'총 평가금액', totalPL:'총 손익', numHoldings:'보유종목', usdkrw:'달러환율',
-      allAccounts:'전체 계좌', allCategories:'전체 카테고리', allMarkets:'전체 시장', usOnly:'미국장', krOnly:'한국장', loading:'↻ 불러오는 중...' },
+      allAccounts:'전체 계좌', allCategories:'전체 카테고리', allMarkets:'전체 시장', usOnly:'미국장', krOnly:'한국장', loading:'↻ 불러오는 중...',
+      emptyState:'종목이 없습니다. 내DB → + 종목추가 에서 추가해보세요.' },
     cols: { name:'종목명', ticker:'티커', account:'계좌', category:'카테고리', shares:'보유량', avgPrice:'평단가', curPrice:'현재가', pl:'수익금', plPct:'수익률%', alloc:'비중%' },
     trade: { title:'매매일지', recordTrade:'+ 매매기록', date:'날짜', stock:'종목', type:'구분', qty:'수량', price:'주당가격', total:'합계', memo:'메모', buy:'매수', sell:'매도',
       noTrades:'매매 기록이 없습니다.', allStocks:'전체 종목', allTypes:'전체', deleteConfirm:'이 매매 기록을 삭제할까요?' },
@@ -1226,7 +1241,6 @@ function renderDashboard() {
       <span class="view-title">${t('dashboard.title')}</span>
       <div class="flex-row">
         <button class="btn btn-secondary btn-sm" data-action="refresh">${t('dashboard.refreshPrices')}</button>
-        <button class="btn btn-primary btn-sm" data-action="add-stock">${t('dashboard.addStock')}</button>
       </div>
     </div>
 
@@ -1275,7 +1289,6 @@ function renderDashboard() {
   </div>`;
 
   document.querySelector('[data-action="refresh"]').addEventListener('click', refreshAllPrices);
-  document.querySelector('[data-action="add-stock"]').addEventListener('click', openAddStockModal);
   document.getElementById('f-account').addEventListener('change',  e => { dashFilter.account   = e.target.value; reRenderView(renderDashboard); });
   document.getElementById('f-category').addEventListener('change', e => { dashFilter.category  = e.target.value; reRenderView(renderDashboard); });
   document.getElementById('f-exchange').addEventListener('change', e => { dashFilter.exchange  = e.target.value; reRenderView(renderDashboard); });
@@ -1291,11 +1304,16 @@ function renderDashboard() {
 
 function renderDashTable(total) {
   const cols = [
-    {key:'name', label:t('cols.name')}, {key:'ticker', label:t('cols.ticker')},
-    {key:'account', label:t('cols.account')}, {key:'category', label:t('cols.category')},
-    {key:'holdings', label:t('cols.shares')}, {key:'avgPrice', label:t('cols.avgPrice')},
-    {key:'currentPrice', label:t('cols.curPrice')}, {key:'profitAmount', label:t('cols.pl')},
-    {key:'profitRate', label:t('cols.plPct')}, {key:'allocation', label:t('cols.alloc')}
+    {key:'name',        label:t('cols.name')},
+    {key:'ticker',      label:t('cols.ticker')},
+    {key:'currentPrice',label:t('cols.curPrice')},
+    {key:'holdings',    label:t('cols.shares')},
+    {key:'profitAmount',label:t('cols.pl')},
+    {key:'profitRate',  label:t('cols.plPct')},
+    {key:'avgPrice',    label:t('cols.avgPrice')},
+    {key:'account',     label:t('cols.account')},
+    {key:'category',    label:t('cols.category')},
+    {key:'allocation',  label:t('cols.alloc')}
   ];
 
   let rows = db.stocks
@@ -1317,28 +1335,32 @@ function renderDashTable(total) {
     return `<span class="sort-arrow">${dashSort.dir > 0 ? '↑' : '↓'}</span>`;
   };
 
+  if (rows.length === 0) return `<table><tbody><tr><td colspan="${cols.length}" class="empty-state" style="padding:32px">
+    <div class="empty-state-icon">📂</div>
+    ${t('dashboard.emptyState')}
+  </td></tr></tbody></table>`;
+
   return `<table>
     <thead><tr>
       ${cols.map(c => `<th data-col="${c.key}" class="${dashSort.col===c.key?'sorted':''}">${c.label}${arrowFor(c.key)}</th>`).join('')}
     </tr></thead>
     <tbody>
-      ${rows.length === 0 ? `<tr><td colspan="${cols.length}" class="empty-state">No stocks yet. Click "+ Add Stock" to begin.</td></tr>` :
-        rows.map(s => `
-        <tr class="stock-row ${s.holdings===0?'row-zero':''}" data-stock-id="${s.id}" style="cursor:pointer">
-          <td><span class="fw-600">${s.name}</span></td>
-          <td><span class="mono" style="color:var(--accent)">${s.ticker}</span></td>
-          <td><span class="text-sm">${s.account}</span></td>
-          <td><span class="text-sm">${s.category}</span></td>
-          <td class="td-num">${formatNum(s.holdings, s.holdings%1===0?0:4)}</td>
-          <td class="td-num">${s.currency==='USD' ? '$'+formatNum(s.avgPrice,2) : '₩'+formatNum(s.avgPrice,0)}</td>
-          <td class="td-num" data-price-cell="${s.id}">
-            ${s.currentPrice == null ? '<span class="shimmer">loading</span>' : formatPrice(s.currentPrice, s.currency)}
-            ${s.stale ? '<span class="stale-icon" title="Stale">⚠</span>' : ''}
-          </td>
-          <td class="td-num ${plClass(s.profitAmount)}">${s.profitAmount != null ? (s.currency==='USD' && db.settings.currency==='USD' ? (s.profitAmount>=0?'+':'')+formatNum(s.profitAmount,2,'$') : (s.profitAmount>=0?'+':'')+formatKRW(toKRW(s.profitAmount,s.currency))) : '--'}</td>
-          <td class="td-num ${plClass(s.profitRate)}">${s.profitRate != null ? formatPct(s.profitRate) : '--'}</td>
-          <td class="td-num">${s.allocation != null ? formatNum(s.allocation,1)+'%' : '--'}</td>
-        </tr>`).join('')}
+      ${rows.map(s => `
+      <tr class="stock-row ${s.holdings===0?'row-zero':''}" data-stock-id="${s.id}" style="cursor:pointer">
+        <td><span class="fw-600">${s.name}</span></td>
+        <td><span class="mono" style="color:var(--accent)">${s.ticker}</span></td>
+        <td class="td-num" data-price-cell="${s.id}">
+          ${s.currentPrice == null ? '<span class="shimmer">loading</span>' : formatPrice(s.currentPrice, s.currency)}
+          ${s.stale ? '<span class="stale-icon" title="Stale">⚠</span>' : ''}
+        </td>
+        <td class="td-num">${formatNum(s.holdings, s.holdings%1===0?0:4)}</td>
+        <td class="td-num ${plClass(s.profitAmount)}">${s.profitAmount != null ? (s.currency==='USD' && db.settings.currency==='USD' ? (s.profitAmount>=0?'+':'')+formatNum(s.profitAmount,2,'$') : (s.profitAmount>=0?'+':'')+formatKRW(toKRW(s.profitAmount,s.currency))) : '--'}</td>
+        <td class="td-num ${plClass(s.profitRate)}">${s.profitRate != null ? formatPct(s.profitRate) : '--'}</td>
+        <td class="td-num">${s.currency==='USD' ? '$'+formatNum(s.avgPrice,2) : '₩'+formatNum(s.avgPrice,0)}</td>
+        <td><span class="text-sm">${s.account}</span></td>
+        <td><span class="text-sm">${s.category}</span></td>
+        <td class="td-num">${s.allocation != null ? formatNum(s.allocation,1)+'%' : '--'}</td>
+      </tr>`).join('')}
     </tbody></table>`;
 }
 
@@ -1491,8 +1513,13 @@ function openAddStockModal(prefill = {}) {
     saveDB();
     overlay.remove();
     toast(`${name} ${t("common.stockAdded")}`, "success");
-    reRenderView(renderDashboard);
-    fetchPrice(newStock).then(p => { newStock.currentPrice=p; newStock.priceUpdatedAt=new Date().toISOString(); saveDB(); if(currentView==='dashboard') reRenderView(renderDashboard); }).catch(()=>{});
+    if (currentView === 'mydb') reRenderView(renderMydb);
+    else reRenderView(renderDashboard);
+    fetchPrice(newStock).then(p => {
+      newStock.currentPrice=p; newStock.priceUpdatedAt=new Date().toISOString(); saveDB();
+      if (currentView === 'dashboard') reRenderView(renderDashboard);
+      else if (currentView === 'mydb') reRenderView(renderMydb);
+    }).catch(()=>{});
   };
 }
 
@@ -1513,7 +1540,12 @@ function recalcStock(stockId) {
   saveDB();
 }
 
-let tlFilter = { stockId:'all', type:'all', from:'', to:'' };
+function defaultFrom() {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 1);
+  return d.toISOString().slice(0, 10);
+}
+let tlFilter = { stockId:'all', type:'all', from:defaultFrom(), to:today() };
 
 function renderTradelog() {
   const app = document.getElementById('app');
@@ -1533,8 +1565,8 @@ function renderTradelog() {
         <option value="buy" ${tlFilter.type==='buy'?'selected':''}>${t('common.buy')}</option>
         <option value="sell" ${tlFilter.type==='sell'?'selected':''}>${t('common.sell')}</option>
       </select>
-      <input type="date" class="filter-select" id="tl-from" value="${tlFilter.from}" style="width:130px">
-      <input type="date" class="filter-select" id="tl-to"   value="${tlFilter.to}"   style="width:130px">
+      <input type="date" class="filter-select filter-date" id="tl-from" value="${tlFilter.from}">
+      <input type="date" class="filter-select filter-date" id="tl-to"   value="${tlFilter.to}">
     </div>
     <div class="table-wrap"><div class="table-scroll">${renderTradeTable()}</div></div>
   </div>`;
@@ -1679,7 +1711,7 @@ function openTradeModal(prefillStockId = null) {
 /* ═══════════════════════════════════════════════════════════
    SECTION 10 — NEWS SCRAPBOOK
 ═══════════════════════════════════════════════════════════ */
-let newsFilter = { stockId:'all', from:'', to:'', q:'' };
+let newsFilter = { stockId:'all', from:defaultFrom(), to:today(), q:'' };
 
 function renderNews() {
   const app = document.getElementById('app');
@@ -1694,8 +1726,8 @@ function renderNews() {
         <option value="all">All Stocks</option>
         ${db.stocks.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}
       </select>
-      <input type="date" class="filter-select" id="nf-from" value="${newsFilter.from}" style="width:130px">
-      <input type="date" class="filter-select" id="nf-to"   value="${newsFilter.to}"   style="width:130px">
+      <input type="date" class="filter-select filter-date" id="nf-from" value="${newsFilter.from}">
+      <input type="date" class="filter-select filter-date" id="nf-to"   value="${newsFilter.to}">
       <input class="filter-select" id="nf-q" placeholder="Search..." value="${newsFilter.q}" style="width:160px">
     </div>
     <div id="news-list">${renderNewsList()}</div>
@@ -2432,6 +2464,7 @@ function renderMydb() {
         <button class="btn btn-secondary btn-sm" data-action="export-xlsx">${t('mydb.exportXlsx')}</button>
         <button class="btn btn-secondary btn-sm" data-action="export-json">${t('mydb.exportJson')}</button>
         <button class="btn btn-secondary btn-sm" data-action="import-json">${t('mydb.importJson')}</button>
+        <button class="btn btn-primary btn-sm"   data-action="add-stock">${t('dashboard.addStock')}</button>
         <input type="file" id="import-file" accept=".json" style="display:none">
       </div>
     </div>
@@ -2447,6 +2480,7 @@ function renderMydb() {
   app.querySelector('[data-action="export-xlsx"]').addEventListener('click', exportExcel);
   app.querySelector('[data-action="export-json"]').addEventListener('click', exportJSON);
   app.querySelector('[data-action="import-json"]').addEventListener('click', ()=>app.querySelector('#import-file').click());
+  app.querySelector('[data-action="add-stock"]').addEventListener('click', openAddStockModal);
   app.querySelector('#import-file').addEventListener('change', e=>{
     const f=e.target.files[0]; if(!f)return;
     const r=new FileReader(); r.onload=ev=>{
