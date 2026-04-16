@@ -739,9 +739,121 @@ tr.row-zero td { opacity: 0.45; }
 .page-btn:hover { background: var(--border); }
 .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* ═══════════════════════════════════════════
-   RESPONSIVE — MOBILE
-═══════════════════════════════════════════ */
+/* Input with unit suffix */
+.input-unit-wrap {
+  position: relative; display: flex; align-items: center;
+}
+.input-unit-wrap .form-input {
+  padding-right: 40px;
+}
+.input-unit {
+  position: absolute; right: 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px; font-weight: 700;
+  color: var(--muted);
+  pointer-events: none;
+  user-select: none;
+}
+.onboard-wrap {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+  padding: 24px;
+}
+.onboard-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 40px 32px;
+  width: 100%; max-width: 420px;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.25s ease;
+}
+.onboard-logo {
+  font-family: 'Space Mono', monospace;
+  font-size: 26px; font-weight: 700;
+  color: var(--accent);
+  text-align: center;
+  letter-spacing: -1px;
+  margin-bottom: 6px;
+}
+.onboard-tagline {
+  text-align: center;
+  font-size: 13px; color: var(--muted);
+  margin-bottom: 32px;
+}
+.onboard-step-label {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--muted); text-align: center;
+  margin-bottom: 20px;
+}
+.onboard-lang-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; margin-bottom: 24px;
+}
+.onboard-lang-btn {
+  padding: 20px 12px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--surface2);
+  cursor: pointer; transition: all 0.15s;
+  text-align: center;
+}
+.onboard-lang-btn:hover { border-color: var(--accent); background: var(--accent-dim); }
+.onboard-lang-btn.active { border-color: var(--accent); background: var(--accent-dim); }
+.onboard-lang-flag { font-size: 28px; margin-bottom: 6px; }
+.onboard-lang-name { font-size: 14px; font-weight: 700; color: var(--text); }
+.onboard-lang-sub  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.onboard-features {
+  display: flex; flex-direction: column; gap: 14px;
+  margin-bottom: 28px;
+}
+.onboard-feature {
+  display: flex; align-items: flex-start; gap: 14px;
+}
+.onboard-feature-icon {
+  font-size: 22px; line-height: 1;
+  flex-shrink: 0; margin-top: 1px;
+}
+.onboard-feature-text { flex: 1; }
+.onboard-feature-title { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+.onboard-feature-desc  { font-size: 12px; color: var(--muted); line-height: 1.4; }
+.onboard-data-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; margin-bottom: 24px;
+}
+.onboard-data-btn {
+  padding: 18px 12px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--surface2);
+  cursor: pointer; transition: all 0.15s;
+  text-align: center;
+}
+.onboard-data-btn:hover { border-color: var(--accent); background: var(--accent-dim); }
+.onboard-data-btn.active { border-color: var(--accent); background: var(--accent-dim); }
+.onboard-data-icon  { font-size: 24px; margin-bottom: 6px; }
+.onboard-data-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+.onboard-data-desc  { font-size: 11px; color: var(--muted); line-height: 1.4; }
+.onboard-dots {
+  display: flex; justify-content: center; gap: 6px; margin-bottom: 24px;
+}
+.onboard-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--border2); transition: background 0.2s;
+}
+.onboard-dot.active { background: var(--accent); width: 18px; border-radius: 3px; }
+.onboard-btn-primary {
+  width: 100%; height: 44px;
+  border-radius: 10px;
+  background: var(--accent); color: #fff;
+  font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+  border: none; font-family: inherit;
+}
+.onboard-btn-primary:hover { filter: brightness(1.1); }
+
 @media (max-width: 500px) {
   .view { padding: 12px 12px 32px; }
   .stat-strip { grid-template-columns: 1fr 1fr; }
@@ -792,7 +904,7 @@ const DEFAULT_DB = {
   stocks: [], trades: [], news: [], rules: [],
   playbook: { principles: [], goals: [], watchlist: [] },
   exchangeRate: { USDKRW: 1380, updatedAt: null },
-  settings: { theme:'light', language:'en', currency:'USD', customAccounts:[], customCategories:[], deletedAccounts:[], deletedCategories:[] }
+  settings: { theme:'light', language:'en', currency:'USD', customAccounts:[], customCategories:[], deletedAccounts:[], deletedCategories:[], onboarded:false }
 };
 
 let db = {};
@@ -1398,7 +1510,7 @@ function openAddStockModal(prefill = {}) {
         <div class="form-group">
           <label class="form-label">${t('common.search')}</label>
           <div class="flex-row">
-            <input class="form-input" id="stock-search-input" placeholder="${t('common.searchPlaceholder')}" value="${prefill.ticker||''}">
+            <input class="form-input" id="stock-search-input" placeholder="${db.settings.language==='ko' ? 'NVDA · Apple · 005930 (종목코드)' : 'NVDA · Apple · 005930'}" value="${prefill.ticker||''}">
             <button class="btn btn-primary" id="stock-search-btn">${t('common.add')}</button>
           </div>
         </div>
@@ -1429,7 +1541,10 @@ function openAddStockModal(prefill = {}) {
           </div>
           <div class="form-group">
             <label class="form-label">${t('cols.avgPrice')}</label>
-            <input class="form-input mono" id="af-avgprice" type="number" min="0" step="any" placeholder="0">
+            <div class="input-unit-wrap">
+              <input class="form-input mono" id="af-avgprice" type="number" min="0" step="any" placeholder="0">
+              <span class="input-unit" id="af-unit">${prefill.exchange === 'KR' ? '₩' : '$'}</span>
+            </div>
           </div>
         </div>
         <div class="form-row">
@@ -1467,6 +1582,8 @@ function openAddStockModal(prefill = {}) {
   overlay.querySelectorAll('[data-exch]').forEach(b => b.addEventListener('click', () => {
     selExch = b.dataset.exch;
     overlay.querySelectorAll('[data-exch]').forEach(x => x.classList.toggle('active', x.dataset.exch === selExch));
+    const unit = overlay.querySelector('#af-unit');
+    if (unit) unit.textContent = selExch === 'KR' ? '₩' : '$';
   }));
 
   function showForm(data) {
@@ -1479,6 +1596,8 @@ function openAddStockModal(prefill = {}) {
       selExch = (data.exchange === 'KSC' || data.exchange === 'KOE' || data.quoteType === 'EQUITY' && /^\d{6}$/.test(data.symbol)) ? 'KR' : 'US';
       overlay.querySelectorAll('[data-exch]').forEach(x => x.classList.toggle('active', x.dataset.exch === selExch));
     }
+    const unit = overlay.querySelector('#af-unit');
+    if (unit) unit.textContent = selExch === 'KR' ? '₩' : '$';
   }
   if (prefill.ticker) showForm(null);
 
@@ -1486,11 +1605,57 @@ function openAddStockModal(prefill = {}) {
     const q = overlay.querySelector('#stock-search-input').value.trim();
     if (!q) return;
     const wrap = overlay.querySelector('#search-results-wrap');
+    const isKo = db.settings.language === 'ko';
+
+    // 6자리 숫자 → 한국 종목코드 직접
+    if (/^\d{6}$/.test(q)) {
+      showForm({ symbol: q, shortname: q, exchange: 'KSC' });
+      wrap.innerHTML = '';
+      return;
+    }
+
+    // 한글 포함 → 안내 메시지
+    if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(q)) {
+      wrap.innerHTML = `
+        <div style="padding:12px;background:var(--alert-dim);border:1px solid var(--alert);border-radius:var(--radius-sm);margin-top:6px;font-size:12px">
+          <div style="font-weight:700;color:var(--alert);margin-bottom:6px">
+            ${isKo ? '한국 주식 검색 방법' : 'How to search Korean stocks'}
+          </div>
+          <div style="color:var(--text2);line-height:1.7">
+            ${isKo
+              ? `① 영문명으로 검색 → <b>Samsung</b>, <b>Kakao</b>, <b>Hyundai</b><br>② 종목코드(6자리)로 검색 → <b>005930</b>, <b>035720</b>, <b>000660</b>`
+              : `① Search in English → <b>Samsung</b>, <b>Kakao</b>, <b>Hyundai</b><br>② Search by stock code (6 digits) → <b>005930</b>, <b>035720</b>`}
+          </div>
+        </div>`;
+      return;
+    }
+
+    // 영문 검색 → Yahoo Finance API
     wrap.innerHTML = `<div class="text-muted text-sm" style="padding:8px">${t('news.searching')}</div>`;
     try {
       const results = await fetchSearchResults(q);
-      if (!results.length) { wrap.innerHTML = `<div class="text-muted text-sm" style="padding:8px">${t('common.noResults')}</div>`; return; }
-      wrap.innerHTML = `<div class="search-results">${results.filter(r=>r.symbol&&r.shortname).map(r=>`
+      const filtered = results.filter(r => r.symbol && r.shortname);
+
+      if (!filtered.length) {
+        // 결과 없음 + 수동 입력 버튼
+        wrap.innerHTML = `
+          <div style="padding:12px;text-align:center">
+            <div class="text-muted text-sm" style="margin-bottom:10px">
+              ${isKo ? `"${q}" 검색 결과 없음` : `No results for "${q}"`}
+            </div>
+            <button class="btn btn-secondary btn-sm" id="manual-entry-btn">
+              ${isKo ? '✏ 직접 입력하기' : '✏ Enter manually'}
+            </button>
+          </div>`;
+        wrap.querySelector('#manual-entry-btn').addEventListener('click', () => {
+          // 검색어를 티커로 pre-fill해서 폼 열기
+          showForm({ symbol: q.toUpperCase(), shortname: q, exchange: '' });
+          wrap.innerHTML = '';
+        });
+        return;
+      }
+
+      wrap.innerHTML = `<div class="search-results">${filtered.map(r=>`
         <div class="search-result-item" data-symbol="${r.symbol}" data-name="${(r.shortname||'').replace(/"/g,'')}" data-exch="${r.exchange||''}">
           <div>
             <div class="search-result-name">${r.shortname||r.symbol}</div>
@@ -1501,7 +1666,21 @@ function openAddStockModal(prefill = {}) {
       wrap.querySelectorAll('.search-result-item').forEach(item => item.addEventListener('click', () => {
         showForm({ symbol:item.dataset.symbol, shortname:item.dataset.name, exchange:item.dataset.exch });
       }));
-    } catch(e) { wrap.innerHTML = `<div class="text-muted text-sm" style="padding:8px">${t('common.searchFailed')}</div>`; showForm(null); }
+    } catch(e) {
+      wrap.innerHTML = `
+        <div style="padding:12px;text-align:center">
+          <div class="text-muted text-sm" style="margin-bottom:10px">
+            ${isKo ? '검색 실패. 직접 입력하거나 다시 시도해보세요.' : 'Search failed. Try again or enter manually.'}
+          </div>
+          <button class="btn btn-secondary btn-sm" id="manual-entry-btn">
+            ${isKo ? '✏ 직접 입력하기' : '✏ Enter manually'}
+          </button>
+        </div>`;
+      wrap.querySelector('#manual-entry-btn').addEventListener('click', () => {
+        showForm({ symbol: q.toUpperCase(), shortname: q, exchange: '' });
+        wrap.innerHTML = '';
+      });
+    }
   };
 
   overlay.querySelector('#stock-search-input').addEventListener('keydown', e => { if (e.key==='Enter') overlay.querySelector('#stock-search-btn').click(); });
@@ -2892,19 +3071,183 @@ async function loadDetailChart(stock) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   SECTION 17 — INIT
+   SECTION 17 — ONBOARDING
+═══════════════════════════════════════════════════════════ */
+const ONBOARD_CONTENT = {
+  en: {
+    tagline: 'Your personal stock portfolio tracker',
+    stepLang: 'Step 1 of 3 — Choose your language',
+    stepFeatures: 'Step 2 of 3 — What you can do',
+    stepData: 'Step 3 of 3 — How to start',
+    features: [
+      { icon:'◈', title:'Dashboard', desc:'Track all your holdings, real-time prices, and P&L at a glance' },
+      { icon:'◉', title:'Graphs', desc:'Visualize allocation by stock, category, and profit rates' },
+      { icon:'⊕', title:'Trade Log', desc:'Record every buy & sell, auto-calculates your average price' },
+      { icon:'⚡', title:'My Rule', desc:'Set alerts — get notified when profit or allocation thresholds are hit' },
+    ],
+    dataTitle: 'Start with sample data or fresh?',
+    dataSample: { icon:'📊', title:'Sample data', desc:'3 example stocks so you can explore right away' },
+    dataFresh:  { icon:'✦', title:'Start fresh', desc:'Clean slate — add your own stocks from the beginning' },
+    next: 'Next →',
+    getStarted: 'Get Started',
+  },
+  ko: {
+    tagline: '나만의 주식 포트폴리오 관리앱',
+    stepLang: '1단계 / 3 — 언어 선택',
+    stepFeatures: '2단계 / 3 — 주요 기능',
+    stepData: '3단계 / 3 — 시작 방법',
+    features: [
+      { icon:'◈', title:'대시보드', desc:'보유 종목, 실시간 가격, 수익률을 한눈에' },
+      { icon:'◉', title:'그래프', desc:'종목·카테고리별 비중과 수익률을 시각화' },
+      { icon:'⊕', title:'매매일지', desc:'매수·매도 기록하면 평단가 자동 계산' },
+      { icon:'⚡', title:'내 규칙', desc:'수익률·비중 기준 설정 → 조건 충족 시 알림' },
+    ],
+    dataTitle: '샘플 데이터로 시작할까요?',
+    dataSample: { icon:'📊', title:'샘플 데이터', desc:'예시 종목 3개로 앱을 바로 탐색해보세요' },
+    dataFresh:  { icon:'✦', title:'빈 화면으로', desc:'직접 종목을 추가하며 시작합니다' },
+    next: '다음 →',
+    getStarted: '시작하기',
+  }
+};
+
+let _obLang = 'en';
+let _obData = 'sample';
+
+function showOnboarding() {
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+  renderOnboardStep(1);
+}
+
+function renderOnboardStep(step) {
+  const c = ONBOARD_CONTENT[_obLang];
+  const app = document.getElementById('app');
+
+  const dots = [1,2,3].map(i =>
+    `<div class="onboard-dot ${i===step?'active':''}"></div>`
+  ).join('');
+
+  let body = '';
+
+  if (step === 1) {
+    body = `
+      <div class="onboard-step-label">${ONBOARD_CONTENT[_obLang].stepLang}</div>
+      <div class="onboard-lang-grid">
+        <button class="onboard-lang-btn ${_obLang==='en'?'active':''}" data-lang="en">
+          <div class="onboard-lang-flag">🇺🇸</div>
+          <div class="onboard-lang-name">English</div>
+          <div class="onboard-lang-sub">International</div>
+        </button>
+        <button class="onboard-lang-btn ${_obLang==='ko'?'active':''}" data-lang="ko">
+          <div class="onboard-lang-flag">🇰🇷</div>
+          <div class="onboard-lang-name">한국어</div>
+          <div class="onboard-lang-sub">Korean</div>
+        </button>
+      </div>
+      <button class="onboard-btn-primary" data-next="2">${ONBOARD_CONTENT[_obLang].next}</button>`;
+  }
+
+  if (step === 2) {
+    body = `
+      <div class="onboard-step-label">${c.stepFeatures}</div>
+      <div class="onboard-features">
+        ${c.features.map(f => `
+          <div class="onboard-feature">
+            <div class="onboard-feature-icon">${f.icon}</div>
+            <div class="onboard-feature-text">
+              <div class="onboard-feature-title">${f.title}</div>
+              <div class="onboard-feature-desc">${f.desc}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+      <button class="onboard-btn-primary" data-next="3">${c.next}</button>`;
+  }
+
+  if (step === 3) {
+    body = `
+      <div class="onboard-step-label">${c.stepData}</div>
+      <p style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:16px">${c.dataTitle}</p>
+      <div class="onboard-data-grid">
+        <button class="onboard-data-btn ${_obData==='sample'?'active':''}" data-data="sample">
+          <div class="onboard-data-icon">${c.dataSample.icon}</div>
+          <div class="onboard-data-title">${c.dataSample.title}</div>
+          <div class="onboard-data-desc">${c.dataSample.desc}</div>
+        </button>
+        <button class="onboard-data-btn ${_obData==='fresh'?'active':''}" data-data="fresh">
+          <div class="onboard-data-icon">${c.dataFresh.icon}</div>
+          <div class="onboard-data-title">${c.dataFresh.title}</div>
+          <div class="onboard-data-desc">${c.dataFresh.desc}</div>
+        </button>
+      </div>
+      <button class="onboard-btn-primary" data-finish="1">${c.getStarted}</button>`;
+  }
+
+  app.innerHTML = `
+    <div class="onboard-wrap">
+      <div class="onboard-card">
+        <div class="onboard-logo">◈ STOCKD</div>
+        <div class="onboard-tagline">${ONBOARD_CONTENT[_obLang].tagline}</div>
+        <div class="onboard-dots">${dots}</div>
+        ${body}
+      </div>
+    </div>`;
+
+  // Language select
+  app.querySelectorAll('[data-lang]').forEach(b => b.addEventListener('click', () => {
+    _obLang = b.dataset.lang;
+    db.settings.language = _obLang;
+    db.settings.deletedAccounts = [];
+    db.settings.deletedCategories = [];
+    renderOnboardStep(1);
+  }));
+
+  // Data select
+  app.querySelectorAll('[data-data]').forEach(b => b.addEventListener('click', () => {
+    _obData = b.dataset.data;
+    app.querySelectorAll('[data-data]').forEach(x => x.classList.toggle('active', x.dataset.data === _obData));
+  }));
+
+  // Next
+  app.querySelectorAll('[data-next]').forEach(b => b.addEventListener('click', () => {
+    renderOnboardStep(parseInt(b.dataset.next));
+  }));
+
+  // Finish
+  app.querySelector('[data-finish]')?.addEventListener('click', () => {
+    db.settings.onboarded = true;
+    if (_obData === 'fresh') {
+      db.stocks = [];
+      db.trades = [];
+      db.rules  = [];
+      db.playbook = { principles:[], goals:[], watchlist:[] };
+    }
+    seedIfEmpty();
+    saveDB();
+    navigate('home');
+  });
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION 18 — INIT
 ═══════════════════════════════════════════════════════════ */
 loadDB();
-seedIfEmpty();
+if (!db.settings.deletedAccounts)  db.settings.deletedAccounts  = [];
+if (!db.settings.deletedCategories) db.settings.deletedCategories = [];
 document.body.setAttribute('data-theme', db.settings.theme || 'light');
 
-// STACKD: if widget has a saved view, restore it. Otherwise always start at home.
-const _startView = _sid ? (loadView() || 'home') : 'home';
-navigate(_startView);
-
-// Auto-refresh prices if stale
-const needsRefresh = db.stocks.some(s => !s.priceUpdatedAt || (Date.now()-new Date(s.priceUpdatedAt))>15*60*1000);
-if (needsRefresh) refreshAllPrices();
+if (!db.settings.onboarded && db.stocks.length === 0) {
+  // First time — show onboarding
+  _obLang = db.settings.language || 'en';
+  showOnboarding();
+} else {
+  if (!db.settings.onboarded) db.settings.onboarded = true; // existing user, mark done
+  seedIfEmpty();
+  const _startView = _sid ? (loadView() || 'home') : 'home';
+  navigate(_startView);
+  const needsRefresh = db.stocks.some(s => !s.priceUpdatedAt || (Date.now()-new Date(s.priceUpdatedAt))>15*60*1000);
+  if (needsRefresh) refreshAllPrices();
+}
 </script>
 </body>
 </html>
