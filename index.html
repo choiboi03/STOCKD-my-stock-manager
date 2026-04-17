@@ -456,6 +456,17 @@ th.col-dragging {
   opacity: 0.4;
   background: var(--surface2) !important;
 }
+/* Notion-style drag handle */
+th .col-handle {
+  display: inline-flex; align-items: center;
+  opacity: 0; margin-right: 4px;
+  color: var(--muted); font-size: 13px;
+  cursor: grab; vertical-align: middle;
+  transition: opacity 0.15s;
+  user-select: none;
+}
+th:hover .col-handle { opacity: 1; }
+th.col-dragging .col-handle { opacity: 1; cursor: grabbing; }
 th .sort-arrow { margin-left: 4px; opacity: 0.5; }
 th.sorted .sort-arrow { opacity: 1; }
 td {
@@ -763,7 +774,19 @@ tr.row-zero td { opacity: 0.45; }
 .mt-12 { margin-top: 12px; }
 .mt-16 { margin-top: 16px; }
 .mb-12 { margin-bottom: 12px; }
-.stale-icon { color: var(--alert); font-size: 14px; margin-left: 4px; vertical-align: middle; }
+.manual-price-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px;
+  margin-left: 5px; padding: 0;
+  background: none; border: none;
+  cursor: pointer; color: var(--muted);
+  vertical-align: middle; border-radius: 3px;
+  transition: color 0.15s, background 0.15s;
+  opacity: 0.6;
+}
+.manual-price-btn:hover { color: var(--accent); background: var(--accent-dim); opacity: 1; }
+.manual-price-btn.is-manual { color: var(--accent); opacity: 1; }
+tr:hover .manual-price-btn { opacity: 1; }
 .pagination {
   display: flex; align-items: center; gap: 8px;
   padding: 12px 16px; border-top: 1px solid var(--border);
@@ -1376,12 +1399,12 @@ async function refreshAllPrices() {
       stock.currentPrice = await fetchPrice(stock);
       stock.priceUpdatedAt = new Date().toISOString();
       stock.stale = false;
+      stock.manualPrice = false;
     } catch(e) { stock.stale = true; }
     saveDB();
     if (cell) {
       cell.classList.remove('shimmer');
       cell.textContent = formatPrice(stock.currentPrice, stock.currency);
-      if (stock.stale) cell.innerHTML += ' <span class="stale-icon" title="Stale">⚠</span>';
     }
     await new Promise(r => setTimeout(r, 300));
   }
@@ -1744,6 +1767,7 @@ function renderDashboard() {
         stock.currentPrice = val;
         stock.priceUpdatedAt = new Date().toISOString();
         stock.stale = false;
+        stock.manualPrice = true;
         saveDB();
         reRenderView(renderDashboard);
       });
@@ -1797,16 +1821,16 @@ function renderCellValue(key, s) {
       return `<td><span class="mono" style="color:var(--accent)">${s.ticker}</span></td>`;
     case 'marketValue':
       return `<td class="td-num fw-600">${s.currentValue != null ? formatKRW(toKRW(s.currentValue, s.currency)) : '--'}</td>`;
-    case 'currentPrice':
+    case 'currentPrice': {
+      const svgPencil = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+      const isManual = !!s.manualPrice;
+      const showBtn  = s.currentPrice == null || isManual || s.stale;
       return `<td class="td-num" data-price-cell="${s.id}">
         ${s.currentPrice == null ? '<span class="shimmer">loading</span>' : formatPrice(s.currentPrice, s.currency)}
-        ${s.stale
-          ? `<span class="stale-icon" title="Stale">⚠</span>
-             <button class="manual-price-btn" data-manual-price="${s.id}" title="${db.settings.language==='ko'?'직접 입력':'Enter manually'}" style="margin-left:6px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;cursor:pointer;color:var(--muted);font-size:13px;padding:2px 6px;line-height:1;vertical-align:middle">✏</button>`
-          : s.currentPrice == null
-            ? `<button class="manual-price-btn" data-manual-price="${s.id}" title="${db.settings.language==='ko'?'직접 입력':'Enter manually'}" style="margin-left:6px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;cursor:pointer;color:var(--muted);font-size:13px;padding:2px 6px;line-height:1;vertical-align:middle">✏</button>`
-            : ''}
+        ${showBtn ? `<button class="manual-price-btn ${isManual?'is-manual':''}" data-manual-price="${s.id}"
+          title="${db.settings.language==='ko'?'직접 입력':'Enter price manually'}">${svgPencil}</button>` : ''}
       </td>`;
+    }
     case 'holdings':
       return `<td class="td-num">${formatNum(s.holdings, s.holdings%1===0?0:4)}</td>`;
     case 'profitAmount':
@@ -1857,8 +1881,8 @@ function renderDashTable(total) {
     <thead><tr>
       ${colOrder.map((key,i) => `<th data-col="${key}" data-col-idx="${i}" draggable="true"
         class="${dashSort.col===key?'sorted':''}"
-        style="cursor:grab;user-select:none">
-        ${colDefs[key]?.label||key}${arrowFor(key)}
+        style="cursor:default;user-select:none">
+        <span class="col-handle" title="${db.settings.language==='ko'?'드래그해서 열 이동':'Drag to reorder'}">⠿</span>${colDefs[key]?.label||key}${arrowFor(key)}
       </th>`).join('')}
     </tr></thead>
     <tbody>
