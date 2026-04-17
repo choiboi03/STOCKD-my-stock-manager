@@ -993,7 +993,9 @@ function seedIfEmpty() {
 
   const isKo = db.settings.language === 'ko';
 
-  if (db.stocks.length === 0) {
+  // Only seed sample stocks for brand-new users (not onboarded yet)
+  // Onboarded users who deleted their stocks intentionally keep empty portfolio
+  if (db.stocks.length === 0 && !db.settings.onboarded) {
     db.stocks = isKo ? [
       { id:uid(), ticker:'NVDA',   name:'엔비디아',   exchange:'US', currency:'USD', holdings:15,  avgPrice:480,   category:'AI·반도체', account:'해외위탁', currentPrice:null, priceUpdatedAt:null, memo:'AI 반도체 핵심 보유' },
       { id:uid(), ticker:'005930', name:'삼성전자',   exchange:'KR', currency:'KRW', holdings:200, avgPrice:68000, category:'AI·반도체', account:'ISA',     currentPrice:null, priceUpdatedAt:null, memo:'장기 분할매수' },
@@ -2877,7 +2879,7 @@ function renderMydb() {
     <div id="mydb-content">${renderMydbTab()}</div>
   </div>`;
 
-  app.querySelectorAll('.tab-btn[data-tab]').forEach(b=>b.addEventListener('click',()=>{mydbTab=b.dataset.tab;mydbPage[mydbTab]=1;app.querySelectorAll('.tab-btn[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===mydbTab));app.querySelector('#mydb-content').innerHTML=renderMydbTab();bindMydbActions();}));
+  app.querySelectorAll('.tab-btn[data-tab]').forEach(b=>b.addEventListener('click',()=>{mydbTab=b.dataset.tab;mydbPage[mydbTab]=1;app.querySelectorAll('.tab-btn[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===mydbTab));app.querySelector('#mydb-content').innerHTML=renderMydbTab();bindMydbActions();setTimeout(applyAllDragScrolls,0);}));
   app.querySelector('[data-action="export-xlsx"]').addEventListener('click', exportExcel);
   app.querySelector('[data-action="export-json"]').addEventListener('click', exportJSON);
   app.querySelector('[data-action="import-json"]').addEventListener('click', ()=>app.querySelector('#import-file').click());
@@ -2985,10 +2987,10 @@ function renderPagination(total, page, tab) {
 function bindMydbActions() {
   const content = document.getElementById('mydb-content');
   if (!content) return;
-  content.querySelectorAll('[data-delete-stock]').forEach(b=>b.addEventListener('click',()=>{if(!confirm(t('mydb.deleteStock')))return;const id=b.dataset.deleteStock;db.stocks=db.stocks.filter(x=>x.id!==id);db.trades=db.trades.filter(x=>x.stockId!==id);saveDB();document.getElementById('mydb-content').innerHTML=renderMydbTab();bindMydbActions();}));
-  content.querySelectorAll('[data-delete-trade-db]').forEach(b=>b.addEventListener('click',()=>{if(!confirm(t('mydb.deleteTrade')))return;const t=db.trades.find(x=>x.id===b.dataset.deleteTradeDb);db.trades=db.trades.filter(x=>x.id!==b.dataset.deleteTradeDb);if(t)recalcStock(t.stockId);saveDB();document.getElementById('mydb-content').innerHTML=renderMydbTab();bindMydbActions();}));
-  content.querySelectorAll('[data-delete-news-db]').forEach(b=>b.addEventListener('click',()=>{if(!confirm(t('playbook.deleteConfirm')))return;db.news=db.news.filter(x=>x.id!==b.dataset.deleteNewsDb);saveDB();document.getElementById('mydb-content').innerHTML=renderMydbTab();bindMydbActions();}));
-  content.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>{mydbPage[b.dataset.ptab]=parseInt(b.dataset.page);document.getElementById('mydb-content').innerHTML=renderMydbTab();bindMydbActions();}));
+  content.querySelectorAll('[data-delete-stock]').forEach(b=>b.addEventListener('click',()=>{if(!confirm(t('mydb.deleteStock')))return;const id=b.dataset.deleteStock;db.stocks=db.stocks.filter(x=>x.id!==id);db.trades=db.trades.filter(x=>x.stockId!==id);saveDB();document.getElementById('mydb-content').innerHTML=renderMydbTab();bindMydbActions();setTimeout(applyAllDragScrolls,0);}));
+  content.querySelectorAll('[data-delete-trade-db]').forEach(b=>b.addEventListener('click',()=>{if(!confirm(t('mydb.deleteTrade')))return;const t=db.trades.find(x=>x.id===b.dataset.deleteTradeDb);db.trades=db.trades.filter(x=>x.id!==b.dataset.deleteTradeDb);if(t)recalcStock(t.stockId);saveDB();document.getElementById('mydb-content').innerHTML=renderMydbTab();bindMydbActions();setTimeout(applyAllDragScrolls,0);}));
+  content.querySelectorAll('[data-delete-news-db]').forEach(b=>b.addEventListener('click',()=>{if(!confirm(t('playbook.deleteConfirm')))return;db.news=db.news.filter(x=>x.id!==b.dataset.deleteNewsDb);saveDB();document.getElementById('mydb-content').innerHTML=renderMydbTab();bindMydbActions();setTimeout(applyAllDragScrolls,0);}));
+  content.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>{mydbPage[b.dataset.ptab]=parseInt(b.dataset.page);document.getElementById('mydb-content').innerHTML=renderMydbTab();bindMydbActions();setTimeout(applyAllDragScrolls,0);}));
 }
 
 function exportExcel() {
