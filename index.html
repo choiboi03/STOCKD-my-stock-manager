@@ -1782,6 +1782,31 @@ function renderDashboard() {
     });
   });
 
+  // ⚠ 느낌표 툴팁
+  document.querySelectorAll('[data-warn]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const existing = document.getElementById('price-warn-tooltip');
+      if (existing) { existing.remove(); return; }
+      const stock = db.stocks.find(s => s.id === btn.dataset.warn);
+      if (!stock) return;
+      const isKo = db.settings.language === 'ko';
+      let msg = '';
+      if (!stock.currentPrice) msg = isKo ? '주가를 불러올 수 없습니다.\n연필 아이콘을 눌러 직접 입력하세요.' : 'Price unavailable.\nClick the pencil icon to enter manually.';
+      else msg = isKo ? '가격 정보가 오래됐습니다.\n연필로 수정하거나 가격 갱신을 해주세요.' : 'Price data is stale.\nClick pencil to update or refresh prices.';
+      const tip = document.createElement('div');
+      tip.id = 'price-warn-tooltip';
+      tip.style.cssText = `position:fixed;z-index:9999;background:#1a1a1a;color:#fff;padding:10px 13px;border-radius:8px;font-size:12px;line-height:1.6;max-width:220px;box-shadow:0 4px 20px rgba(0,0,0,0.4);white-space:pre-line`;
+      tip.textContent = msg;
+      const rect = btn.getBoundingClientRect();
+      tip.style.left = Math.min(rect.left, window.innerWidth - 240) + 'px';
+      tip.style.top  = (rect.bottom + 6) + 'px';
+      document.body.appendChild(tip);
+      const close = e2 => { if (!tip.contains(e2.target) && e2.target !== btn) { tip.remove(); document.removeEventListener('click', close); } };
+      setTimeout(() => document.addEventListener('click', close), 0);
+    });
+  });
+
   document.querySelectorAll('.stock-row').forEach(tr => {
     tr.addEventListener('click', () => openStockDetail(tr.dataset.stockId));
   });
@@ -1824,11 +1849,21 @@ function renderCellValue(key, s) {
     case 'currentPrice': {
       const svgPencil = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
       const isManual = !!s.manualPrice;
-      const showBtn  = s.currentPrice == null || isManual || s.stale;
-      return `<td class="td-num" data-price-cell="${s.id}">
-        ${s.currentPrice == null ? '<span class="shimmer">loading</span>' : formatPrice(s.currentPrice, s.currency)}
-        ${showBtn ? `<button class="manual-price-btn ${isManual?'is-manual':''}" data-manual-price="${s.id}"
-          title="${db.settings.language==='ko'?'직접 입력':'Enter price manually'}">${svgPencil}</button>` : ''}
+      const isNull   = s.currentPrice == null;
+      const isStale  = !!s.stale;
+      const needsEdit = isNull || isManual || isStale;
+      const isKo = db.settings.language === 'ko';
+
+      // ! tooltip message
+      let warnMsg = '';
+      if (isNull)   warnMsg = isKo ? '주가를 불러올 수 없습니다. 연필 아이콘을 눌러 직접 입력하세요.' : 'Price unavailable. Click the pencil icon to enter manually.';
+      else if (isStale) warnMsg = isKo ? '가격 정보가 오래됐습니다. 연필로 직접 수정하거나 가격 갱신을 눌러주세요.' : 'Price data is stale. Enter manually or refresh prices.';
+
+      return `<td class="td-num" data-price-cell="${s.id}" style="white-space:nowrap">
+        ${needsEdit ? `<button class="manual-price-btn ${isManual?'is-manual':''}" data-manual-price="${s.id}"
+          title="${isKo?'직접 입력':'Enter price manually'}" style="margin-right:3px">${svgPencil}</button>` : ''}
+        ${warnMsg ? `<span class="price-warn-btn" data-warn="${s.id}" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:${isNull?'#EF4444':'#F97316'};color:#fff;font-size:10px;font-weight:900;cursor:pointer;margin-right:3px;vertical-align:middle;flex-shrink:0;position:relative">!</span>` : ''}
+        ${isNull ? '<span style="color:var(--muted);font-size:12px">—</span>' : formatPrice(s.currentPrice, s.currency)}
       </td>`;
     }
     case 'holdings':
