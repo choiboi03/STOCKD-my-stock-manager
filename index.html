@@ -452,6 +452,10 @@ th.col-drag-over {
   background: var(--accent-dim) !important;
   border-left: 2px solid var(--accent);
 }
+th.col-dragging {
+  opacity: 0.4;
+  background: var(--surface2) !important;
+}
 th .sort-arrow { margin-left: 4px; opacity: 0.5; }
 th.sorted .sort-arrow { opacity: 1; }
 td {
@@ -1699,11 +1703,16 @@ function renderDashboard() {
   document.getElementById('f-account').addEventListener('change',  e => { dashFilter.account   = e.target.value; reRenderView(renderDashboard); });
   document.getElementById('f-category').addEventListener('change', e => { dashFilter.category  = e.target.value; reRenderView(renderDashboard); });
   document.getElementById('f-exchange').addEventListener('change', e => { dashFilter.exchange  = e.target.value; reRenderView(renderDashboard); });
-  document.querySelectorAll('th[data-col]').forEach(th => th.addEventListener('click', () => {
-    const col = th.dataset.col;
-    if (dashSort.col === col) dashSort.dir *= -1; else { dashSort.col = col; dashSort.dir = 1; }
-    reRenderView(renderDashboard);
-  }));
+  document.querySelectorAll('th[data-col]').forEach(th => {
+    let _dragged = false;
+    th.addEventListener('dragstart', () => { _dragged = true; });
+    th.addEventListener('click', () => {
+      if (_dragged) { _dragged = false; return; } // ignore click after drag
+      const col = th.dataset.col;
+      if (dashSort.col === col) dashSort.dir *= -1; else { dashSort.col = col; dashSort.dir = 1; }
+      reRenderView(renderDashboard);
+    });
+  });
   document.querySelectorAll('[data-manual-price]').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation(); // row click 방지
@@ -1860,40 +1869,114 @@ function renderDashTable(total) {
     </tbody></table>`;
 }
 
-// Column drag-to-reorder
+// Column drag-to-reorder — mouse + touch both supported
 function bindColDrag() {
   const table = document.getElementById('dash-table');
   if (!table) return;
   const headers = [...table.querySelectorAll('thead th')];
-  let dragIdx = null;
 
+  let dragSrc = null;
+  let clone   = null;
+
+  // ── MOUSE (desktop) ──────────────────────────────────────
   headers.forEach((th, i) => {
+    th.setAttribute('draggable', 'true');
+
     th.addEventListener('dragstart', e => {
-      dragIdx = i;
-      th.style.opacity = '0.4';
+      dragSrc = i;
       e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(i));
+      setTimeout(() => th.classList.add('col-dragging'), 0);
     });
     th.addEventListener('dragend', () => {
-      th.style.opacity = '';
+      th.classList.remove('col-dragging');
       headers.forEach(h => h.classList.remove('col-drag-over'));
+      dragSrc = null;
     });
-    th.addEventListener('dragover', e => {
+    th.addEventListener('dragenter', e => e.preventDefault());
+    th.addEventListener('dragover',  e => {
       e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
       headers.forEach(h => h.classList.remove('col-drag-over'));
-      th.classList.add('col-drag-over');
+      if (dragSrc !== null && dragSrc !== i) th.classList.add('col-drag-over');
     });
+    th.addEventListener('dragleave', () => th.classList.remove('col-drag-over'));
     th.addEventListener('drop', e => {
-      e.preventDefault();
-      if (dragIdx === null || dragIdx === i) return;
-      const order = getColOrder();
-      const moved = order.splice(dragIdx, 1)[0];
-      order.splice(i, 0, moved);
-      db.settings.colOrder = order;
-      saveDB();
-      dragIdx = null;
-      reRenderView(renderDashboard);
+      e.preventDefault(); e.stopPropagation();
+      const from = parseInt(e.dataTransfer.getData('text/plain'));
+      if (isNaN(from) || from === i) return;
+      _applyColReorder(from, i);
     });
   });
+
+  // ── TOUCH (mobile/tablet) ─────────────────────────────────
+  headers.forEach((th, i) => {
+    let touchMoved = false;
+    let overIdx = null;
+    let startX, startY;
+
+    th.addEventListener('touchstart', e => {
+      touchMoved = false;
+      dragSrc = i;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+
+      // floating clone
+      clone = th.cloneNode(true);
+      clone.style.cssText = `
+        position:fixed; z-index:9999; opacity:0.85; pointer-events:none;
+        background:var(--accent); color:#fff;
+        border-radius:var(--radius-sm); padding:8px 12px;
+        font-size:11px; font-weight:700;
+        box-shadow:0 4px 20px rgba(0,0,0,0.3);
+        transform:scale(1.08);
+        white-space:nowrap;
+        left:${e.touches[0].clientX - th.offsetWidth/2}px;
+        top:${e.touches[0].clientY - 20}px;`;
+      document.body.appendChild(clone);
+      th.classList.add('col-dragging');
+    }, { passive: true });
+
+    th.addEventListener('touchmove', e => {
+      if (!clone) return;
+      touchMoved = true;
+      const tx = e.touches[0].clientX;
+      const ty = e.touches[0].clientY;
+      clone.style.left = (tx - th.offsetWidth/2) + 'px';
+      clone.style.top  = (ty - 20) + 'px';
+
+      // find which header we're over
+      headers.forEach(h => h.classList.remove('col-drag-over'));
+      overIdx = null;
+      headers.forEach((h, j) => {
+        const rect = h.getBoundingClientRect();
+        if (tx >= rect.left && tx <= rect.right) {
+          overIdx = j;
+          if (j !== dragSrc) h.classList.add('col-drag-over');
+        }
+      });
+    }, { passive: true });
+
+    th.addEventListener('touchend', () => {
+      if (clone) { clone.remove(); clone = null; }
+      th.classList.remove('col-dragging');
+      headers.forEach(h => h.classList.remove('col-drag-over'));
+
+      if (touchMoved && overIdx !== null && overIdx !== dragSrc) {
+        _applyColReorder(dragSrc, overIdx);
+      }
+      dragSrc = null; overIdx = null;
+    });
+  });
+}
+
+function _applyColReorder(from, to) {
+  const order = getColOrder();
+  const moved = order.splice(from, 1)[0];
+  order.splice(to, 0, moved);
+  db.settings.colOrder = order;
+  saveDB();
+  reRenderView(renderDashboard);
 }
 
 /* ═══════════════════════════════════════════════════════════
