@@ -377,7 +377,25 @@ input[type="date"].form-input {
   overflow: hidden;
   box-shadow: var(--shadow);
 }
-.table-scroll { overflow-x: auto; }
+.table-scroll {
+  overflow-x: auto;
+  cursor: grab;
+  user-select: none;
+  /* Custom scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: var(--border2) transparent;
+}
+.table-scroll:active { cursor: grabbing; }
+.table-scroll.is-dragging { cursor: grabbing; }
+
+/* Webkit scrollbar */
+.table-scroll::-webkit-scrollbar { height: 5px; }
+.table-scroll::-webkit-scrollbar-track { background: transparent; }
+.table-scroll::-webkit-scrollbar-thumb {
+  background: var(--border2);
+  border-radius: 3px;
+}
+.table-scroll::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 table { width: 100%; border-collapse: collapse; }
 thead { background: var(--surface2); }
 th {
@@ -1371,6 +1389,8 @@ function navigate(viewId) {
     homeBtn.addEventListener('click', () => navigate('home'));
     viewHeader.insertBefore(homeBtn, viewHeader.firstChild);
   }
+
+  setTimeout(applyAllDragScrolls, 0);
 }
 
 // Re-render the current view in-place WITHOUT touching the topbar/home button.
@@ -1398,6 +1418,35 @@ function reRenderView(renderFn) {
     homeBtn.addEventListener('click', () => navigate('home'));
     viewHeader.insertBefore(homeBtn, viewHeader.firstChild);
   }
+  // Apply drag-scroll to any newly rendered table-scroll elements
+  setTimeout(applyAllDragScrolls, 0);
+}
+
+// Drag-to-scroll: attach to any .table-scroll element
+function applyDragScroll(el) {
+  if (!el || el._dragBound) return;
+  el._dragBound = true;
+  let isDown = false, startX, scrollLeft;
+  el.addEventListener('mousedown', e => {
+    // don't hijack clicks on buttons/links inside table
+    if (e.target.closest('button,a,input,select')) return;
+    isDown = true;
+    el.classList.add('is-dragging');
+    startX = e.pageX - el.offsetLeft;
+    scrollLeft = el.scrollLeft;
+  });
+  el.addEventListener('mouseleave', () => { isDown = false; el.classList.remove('is-dragging'); });
+  el.addEventListener('mouseup',    () => { isDown = false; el.classList.remove('is-dragging'); });
+  el.addEventListener('mousemove',  e => {
+    if (!isDown) return;
+    e.preventDefault();
+    const x = e.pageX - el.offsetLeft;
+    el.scrollLeft = scrollLeft - (x - startX);
+  });
+}
+
+function applyAllDragScrolls() {
+  document.querySelectorAll('.table-scroll').forEach(applyDragScroll);
 }
 
 /* ═══════════════════════════════════════════════════════════
